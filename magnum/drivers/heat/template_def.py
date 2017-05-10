@@ -313,6 +313,9 @@ class BaseTemplateDefinition(TemplateDefinition):
             else:
                 self.validate_discovery_url(cluster.discovery_url, 1)
             discovery_url = cluster.discovery_url
+        elif (hasattr(cluster, 'discovery_url') and
+              not CONF.cluster.etcd_discovery_service_endpoint_format):
+            discovery_url = ''
         else:
             discovery_endpoint = (
                 CONF.cluster.etcd_discovery_service_endpoint_format %
