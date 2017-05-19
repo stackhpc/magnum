@@ -87,6 +87,16 @@ parameters:
     type: string
     description: version of swarm used for swarm cluster
 
+  swarm_mode:
+    type: boolean
+    description: >
+      Whether to use docker swarm mode rather than swarm manager
+    default: false
+
+  swarm_mode_join_token:
+    type: string
+    description: Token to use to join the swarm
+
   secgroup_swarm_node_id:
     type: string
     description: ID of the security group for swarm node.
@@ -203,6 +213,8 @@ resources:
             "$ETCD_SERVER_IP": {get_param: etcd_server_ip}
             "$API_IP_ADDRESS": {get_param: api_ip_address}
             "$SWARM_VERSION": {get_param: swarm_version}
+            "$SWARM_MODE": {get_param: swarm_mode}
+            "$SWARM_MODE_JOIN_TOKEN": {get_param: swarm_mode_join_token}
             "$TRUSTEE_DOMAIN_ID": {get_param: trustee_domain_id}
             "$TRUSTEE_USER_ID": {get_param: trustee_user_id}
             "$TRUSTEE_USERNAME": {get_param: trustee_username}
@@ -283,6 +295,12 @@ resources:
       group: ungrouped
       config: {get_file: ../../common/templates/swarm/fragments/write-swarm-agent-service.sh}
 
+  write_swarm_mode_agent_service:
+    type: "OS::Heat::SoftwareConfig"
+    properties:
+      group: ungrouped
+      config: {get_file: ../../common/templates/swarm/fragments/write-swarm-mode-agent-service.sh}
+
   enable_docker_registry:
     type: OS::Heat::SoftwareConfig
     properties:
@@ -336,6 +354,7 @@ resources:
         - config: {get_resource: configure_docker_registry}
         - config: {get_resource: write_swarm_agent_failure_service}
         - config: {get_resource: write_swarm_agent_service}
+        - config: {get_resource: write_swarm_mode_agent_service}
         - config: {get_resource: add_docker_daemon_options}
         - config: {get_resource: write_docker_socket}
         - config: {get_resource: add_proxy}

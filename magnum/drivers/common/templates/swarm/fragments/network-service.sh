@@ -22,7 +22,7 @@ fi
 
 echo "Configuring ${NETWORK_DRIVER} network service ..."
 
-if [ "$NETWORK_DRIVER" == "docker" ]; then
+if [ "$NETWORK_DRIVER" == "docker" -a "${SWARM_MODE}" == "False" ]; then
     sed -i "/^DOCKER_NETWORK_OPTIONS=/ s#=.*#='$DOCKER_NETWORK_OPTIONS'#" \
         /etc/sysconfig/docker-network
 fi
