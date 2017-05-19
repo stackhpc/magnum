@@ -33,6 +33,9 @@ class FedoraSwarmIronicTemplateDefinition(sftd.SwarmFedoraTemplateDefinition):
                            cluster_template_attr='fixed_subnet',
                            param_type=str,
                            required=True)
+        self.add_parameter('swarm_mode',
+                           cluster_template_attr='swarm_mode',
+                           param_type=bool)
 
     def get_fixed_network_id(self, osc, cluster_template):
         try:
