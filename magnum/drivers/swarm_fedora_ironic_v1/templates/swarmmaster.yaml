@@ -110,6 +110,12 @@ parameters:
     constraints:
       - allowed_values: ["spread", "binpack", "random"]
 
+  swarm_mode:
+    type: boolean
+    description: >
+      Whether to use docker swarm mode rather than swarm manager
+    default: false
+
   secgroup_swarm_master_id:
     type: string
     description: ID of the security group for swarm master.
@@ -229,6 +235,7 @@ resources:
             "$ETCD_SERVER_IP": {get_attr: [etcd_address_switch, private_ip]}
             "$API_IP_ADDRESS": {get_attr: [api_address_switch, public_ip]}
             "$SWARM_VERSION": {get_param: swarm_version}
+            "$SWARM_MODE": {get_param: swarm_mode}
             "$TRUSTEE_USER_ID": {get_param: trustee_user_id}
             "$TRUSTEE_PASSWORD": {get_param: trustee_password}
             "$TRUST_ID": {get_param: trust_id}
@@ -325,6 +332,23 @@ resources:
             "$TLS_DISABLED": {get_param: tls_disabled}
             "$SWARM_VERSION": {get_param: swarm_version}
             "$SWARM_STRATEGY": {get_param: swarm_strategy}
+            "$SWARM_MODE": {get_param: swarm_mode}
+
+  write_swarm_mode_master_service:
+    type: "OS::Heat::SoftwareConfig"
+    properties:
+      group: ungrouped
+      config:
+        str_replace:
+          template: {get_file: ../../common/templates/swarm/fragments/write-swarm-mode-master-service.sh}
+          params:
+            "$NODE_IP": {get_attr: [swarm_master_eth0, fixed_ips, 0, ip_address]}
+            "$WAIT_HANDLE_ENDPOINT": {get_attr: [master_wait_handle, endpoint]}
+            "$WAIT_HANDLE_TOKEN": {get_attr: [master_wait_handle, token]}
+            "$HTTP_PROXY": {get_param: http_proxy}
+            "$HTTPS_PROXY": {get_param: https_proxy}
+            "$NO_PROXY": {get_param: no_proxy}
+            "$SWARM_MODE": {get_param: swarm_mode}
 
   enable_services:
     type: "OS::Heat::SoftwareConfig"
@@ -377,6 +401,7 @@ resources:
         - config: {get_resource: add_docker_daemon_options}
         - config: {get_resource: write_docker_socket}
         - config: {get_resource: write_swarm_master_service}
+        - config: {get_resource: write_swarm_mode_master_service}
         - config: {get_resource: add_proxy}
         - config: {get_resource: enable_services}
         - config: {get_resource: cfn_signal}
@@ -451,3 +476,8 @@ outputs:
     value: {get_attr: [swarm_master_floating, floating_ip_address]}
     description: >
       This is the "public" ip addresses of Swarm master.
+
+  swarm_mode_join_token:
+    value: {get_attr: [master_wait_condition, data]}
+    description: >
+      This is the token to be used by workers to join the swarm.

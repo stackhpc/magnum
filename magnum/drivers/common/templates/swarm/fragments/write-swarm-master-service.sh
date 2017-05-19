@@ -2,6 +2,10 @@
 
 CERT_DIR=/etc/docker
 
+if [ $SWARM_MODE = "True" ]; then
+    exit
+fi
+
 if [ -z "$NO_PROXY" ]; then
     NO_PROXY=$SWARM_API_IP,$ETCD_SERVER_IP,$SWARM_NODE_IP
 fi

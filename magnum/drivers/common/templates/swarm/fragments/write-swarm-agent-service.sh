@@ -2,6 +2,10 @@
 
 . /etc/sysconfig/heat-params
 
+if [ ${SWARM_MODE} = "True" ]; then
+    exit
+fi
+
 myip="$SWARM_NODE_IP"
 
 CONF_FILE=/etc/systemd/system/swarm-agent.service
