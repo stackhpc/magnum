@@ -1,6 +1,11 @@
 # This file contains docker storage drivers configuration for fedora
 # atomic hosts. Currently, devicemapper and overlay are supported.
 
+# Determine whether the installed docker has the docker-storage-setup utility.
+has_dss () {
+    which docker-storage-setup >/dev/null 2>&1
+}
+
 # * Remove any existing docker-storage configuration. In case of an
 #   existing configuration, docker-storage-setup will fail.
 # * Remove docker storage graph
@@ -9,6 +14,15 @@ clear_docker_storage () {
     systemctl stop docker
     # clear storage graph
     rm -rf /var/lib/docker/*
+
+    if has_dss; then
+        clear_docker_storage_dss
+    else
+        clear_docker_storage_no_dss
+    fi
+}
+
+clear_docker_storage_dss () {
     # remove current LVs
     docker-storage-setup --reset
 
@@ -17,8 +31,23 @@ clear_docker_storage () {
     fi
 }
 
+clear_docker_storage_no_dss () {
+    if [[ -e /dev/mapper/docker-thinpool ]]; then
+        lvchange -an docker/thinpool
+        lvremove docker/thinpool
+    fi
+}
+
 # Configure docker storage with xfs as backing filesystem.
 configure_overlay () {
+    if has_dss; then
+        configure_overlay_dss
+    else
+        configure_overlay_no_dss
+    fi
+}
+
+configure_overlay_dss () {
     clear_docker_storage
 
     if [ -n "$DOCKER_VOLUME_SIZE" ] && [ "$DOCKER_VOLUME_SIZE" -gt 0 ]; then
@@ -36,10 +65,23 @@ configure_overlay () {
     lvextend -r $lvname $pvname
 }
 
+configure_overlay_no_dss () {
+    echo "Error: OverlayFS is not currently supported without docker-storage-setup"
+    exit 1
+}
+
 # Configure docker storage with devicemapper using direct LVM
 configure_devicemapper () {
     clear_docker_storage
 
+    if has_dss; then
+        configure_devicemapper_dss
+    else
+        configure_devicemapper_no_dss
+    fi
+}
+
+configure_devicemapper_dss() {
     echo "GROWROOT=True" > /etc/sysconfig/docker-storage-setup
     echo "ROOT_SIZE=5GB" >> /etc/sysconfig/docker-storage-setup
 
@@ -54,4 +96,52 @@ configure_devicemapper () {
     fi
 
     docker-storage-setup
+}
+
+configure_devicemapper_no_dss () {
+    if [ -n "$DOCKER_VOLUME_SIZE" ] && [ "$DOCKER_VOLUME_SIZE" -gt 0 ]; then
+
+        pvcreate -f ${device_path}
+        vgcreate docker ${device_path}
+        lvcreate --wipesignatures y -n thinpool docker -l 95%VG
+        lvcreate --wipesignatures y -n thinpoolmeta docker -l 1%VG
+        lvconvert -y \
+          --zero n \
+          -c 512K \
+          --thinpool docker/thinpool \
+          --poolmetadata docker/thinpoolmeta
+        cat >> /etc/lvm/profile/docker-thinpool.profile << EOF
+thin_pool_autoextend_threshold = 80
+activation {
+  thin_pool_autoextend_threshold=80
+  thin_pool_autoextend_percent=20
+}
+EOF
+        lvchange --metadataprofile docker-thinpool docker/thinpool
+        lvs -o+seg_monitor
+
+        # Configure dockerd to use the devicemapper volume.
+        cat | python << EOF
+import json
+
+try:
+    with open("/etc/docker/daemon.json") as f:
+        opts = json.load(f)
+except IOError:
+    opts = {}
+
+opts["storage-driver"] = "devicemapper"
+opts["storage-opts"] = [
+    "dm.thinpooldev=/dev/mapper/docker-thinpool",
+    "dm.use_deferred_removal=true",
+    "dm.use_deferred_deletion=true"
+]
+
+with open("/etc/docker/daemon.json", "w") as f:
+    json.dump(opts, f, sort_keys=True, indent=4)
+EOF
+    else
+        echo "Error: must use an ephemeral partition with devicemapper"
+        exit 1
+    fi
 }
