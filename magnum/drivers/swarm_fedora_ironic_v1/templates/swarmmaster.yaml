@@ -22,6 +22,12 @@ parameters:
       size of a cinder volume to allocate to docker for container/image
       storage
 
+  docker_volume_type:
+    type: string
+    description: >
+      type of a cinder volume to allocate to docker for container/image
+      storage
+
   external_network:
     type: string
     description: uuid/name of a network to use for floating ip addresses
@@ -218,6 +224,7 @@ resources:
             "$WAIT_CURL": {get_attr: [master_wait_handle, curl_cli]}
             "$DOCKER_VOLUME": 'None'
             "$DOCKER_VOLUME_SIZE": {get_param: docker_volume_size}
+            "$DOCKER_VOLUME_TYPE": {get_param: docker_volume_type}
             "$DOCKER_STORAGE_DRIVER": {get_param: docker_storage_driver}
             "$ETCD_DISCOVERY_URL": {get_param: discovery_url}
             "$HTTP_PROXY": {get_param: http_proxy}
