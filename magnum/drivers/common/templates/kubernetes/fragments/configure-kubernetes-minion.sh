@@ -126,6 +126,9 @@ fi
 # specified cgroup driver
 KUBELET_ARGS="${KUBELET_ARGS} --client-ca-file=${CERT_DIR}/ca.crt --tls-cert-file=${CERT_DIR}/kubelet.crt --tls-private-key-file=${CERT_DIR}/kubelet.key  --cgroup-driver=systemd"
 
+# specified cgroup-per-qos and enforce-node-allocatable without which we get FailedNodeAllocatableEnforcement warning under `kubectl describe nodes`
+KUBELET_ARGS="${KUBELET_ARGS} --cgroups-per-qos=true --enforce-node-allocatable=pods"
+
 cat > /etc/kubernetes/get_require_kubeconfig.sh <<EOF
 #!/bin/bash
 
