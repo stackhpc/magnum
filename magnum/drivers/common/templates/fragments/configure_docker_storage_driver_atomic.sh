@@ -12,9 +12,9 @@ has_dss () {
 clear_docker_storage () {
     # stop docker
     systemctl stop docker
-    systemctl disable docker-storage-setup
     rm -rf /var/lib/docker/*
 
+    # clear storage graph
     if has_dss; then
         clear_docker_storage_dss
     else
@@ -26,7 +26,6 @@ clear_docker_storage_dss () {
     # remove current LVs
     systemctl disable docker-storage-setup
 
-    # clear storage graph
     if [ -f /etc/sysconfig/docker-storage ]; then
         sed -i "/^DOCKER_STORAGE_OPTIONS=/ s/=.*/=/" /etc/sysconfig/docker-storage
     fi
