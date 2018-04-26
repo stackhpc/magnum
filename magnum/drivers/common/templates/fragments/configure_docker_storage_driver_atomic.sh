@@ -70,6 +70,7 @@ try:
 except IOError:
     opts = {}
 
+opts["exec-opts"] = ["native.cgroupdriver=systemd"]
 opts["storage-driver"] = "$DOCKER_STORAGE_DRIVER"
 
 with open("/etc/docker/daemon.json", "w") as f:
@@ -138,6 +139,7 @@ try:
 except IOError:
     opts = {}
 
+opts["exec-opts"] = ["native.cgroupdriver=systemd"]
 opts["storage-driver"] = "devicemapper"
 opts["storage-opts"] = [
     "dm.thinpooldev=/dev/mapper/docker-thinpool",
