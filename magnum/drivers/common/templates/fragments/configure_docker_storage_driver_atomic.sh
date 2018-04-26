@@ -13,7 +13,6 @@ clear_docker_storage () {
     # stop docker
     systemctl stop docker
     systemctl disable docker-storage-setup
-    # clear storage graph
     rm -rf /var/lib/docker/*
 
     if has_dss; then
@@ -25,9 +24,9 @@ clear_docker_storage () {
 
 clear_docker_storage_dss () {
     # remove current LVs
-    docker-storage-setup --reset
+    systemctl disable docker-storage-setup
 
-
+    # clear storage graph
     if [ -f /etc/sysconfig/docker-storage ]; then
         sed -i "/^DOCKER_STORAGE_OPTIONS=/ s/=.*/=/" /etc/sysconfig/docker-storage
     fi
@@ -62,7 +61,7 @@ configure_storage_driver_generic_dss () {
 }
 
 configure_storage_driver_generic_no_dss () {
-    # Configure dockerd to use the devicemapper volume.
+    # Configure dockerd to use the overlay or overlay2 volume.
     cat | python << EOF
 import json
 
