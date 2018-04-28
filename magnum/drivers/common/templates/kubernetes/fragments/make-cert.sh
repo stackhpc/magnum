@@ -37,7 +37,11 @@ if [[ -z "${KUBE_NODE_IP}" ]]; then
     KUBE_NODE_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
 fi
 
-sans="IP:${KUBE_NODE_PUBLIC_IP},IP:${KUBE_NODE_IP}"
+sans="IP:${KUBE_NODE_IP}"
+if [[ -n "${KUBE_NODE_PUBLIC_IP}" ]]; then
+    sans="IP:${KUBE_NODE_PUBLIC_IP},${sans}"
+fi
+
 if [ "${KUBE_NODE_PUBLIC_IP}" != "${KUBE_API_PUBLIC_ADDRESS}" ] \
         && [ -n "${KUBE_API_PUBLIC_ADDRESS}" ]; then
     sans="${sans},IP:${KUBE_API_PUBLIC_ADDRESS}"
