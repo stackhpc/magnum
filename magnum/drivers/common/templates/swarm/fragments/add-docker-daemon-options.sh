@@ -31,14 +31,11 @@ except IOError:
     opts = {}
 
 opts["hosts"] = ["fd://"]
+opts["hosts"].append("tcp://0.0.0.0:2375")
 if "${SET_LOG_DRIVER}" == "True":
     opts["log-driver"] = "${LOG_DRIVER}"
 if "${SET_SELINUX_ENABLED}" == "True":
     opts["selinux-enabled"] = True
-if "${SWARM_MODE}" == "True":
-    opts["hosts"].append("tcp://0.0.0.0:2376")
-else:
-    opts["hosts"].append("tcp://0.0.0.0:2375")
 if "${TLS_DISABLED}" == "False":
     opts["tlsverify"] = True
     opts["tlscacert"] = "/etc/docker/ca.crt"
