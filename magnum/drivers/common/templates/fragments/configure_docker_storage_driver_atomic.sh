@@ -47,5 +47,5 @@ configure_devicemapper () {
         echo "DATA_SIZE=95%FREE" >> /etc/sysconfig/docker-storage-setup
     fi
 
-    docker-storage-setup
+    container-storage-setup
 }
