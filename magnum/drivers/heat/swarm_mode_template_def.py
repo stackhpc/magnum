@@ -67,7 +67,7 @@ class MasterAddressOutputMapping(ServerAddressOutputMapping):
 
 
 class NodeAddressOutputMapping(ServerAddressOutputMapping):
-    public_ip_output_key = 'swarms_nodes'
+    public_ip_output_key = 'swarm_nodes'
     private_ip_output_key = 'swarm_nodes_private'
 
     def set_output(self, stack, cluster_template, cluster):

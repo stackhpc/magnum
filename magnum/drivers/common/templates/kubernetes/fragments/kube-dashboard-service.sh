@@ -335,8 +335,14 @@ spec:
 EOF
     }
 
+    if [ "$MASTER_INDEX" != "0" ]; then
+        exit 0
+    fi
+
+
+
     echo "Waiting for Kubernetes API..."
-    until curl --silent "http://127.0.0.1:8080/version"
+    until  [ "ok" = "$(curl --silent http://127.0.0.1:8080/healthz)" ]
     do
         sleep 5
     done
@@ -448,8 +454,18 @@ subjects:
 EOF
 }
 
+# NOTE(flwang): Let's keep the same addons yaml file on all masters,
+# but if it's not the primary/bootstrapping master, don't try to
+# create those resources to avoid race condition issue until the
+# kubectl issue https://github.com/kubernetes/kubernetes/issues/44165
+# fixed.
+
+if [ "$MASTER_INDEX" != "0" ]; then
+    exit 0
+fi
+
 echo "Waiting for Kubernetes API..."
-until curl --silent "http://127.0.0.1:8080/version"
+until  [ "ok" = "$(curl --silent http://127.0.0.1:8080/healthz)" ]
 do
     sleep 5
 done
