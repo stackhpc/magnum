@@ -357,6 +357,18 @@ parameters:
     description: >
       additional options to be passed to the scheduler
 
+  octavia_enabled:
+    type: boolean
+    description: >
+      whether or not to use Octavia for LoadBalancer type service.
+    default: False
+
+  master_index:
+    type: string
+    description: >
+      the index of master node, index 0 means the master node is the primary,
+      bootstrapping node.
+
 resources:
 
   master_wait_handle:
@@ -397,6 +409,7 @@ resources:
         str_replace:
           template: {get_file: ../../common/templates/kubernetes/fragments/write-heat-params-master.yaml}
           params:
+            "$MASTER_INDEX": {get_param: master_index}
             "$PROMETHEUS_MONITORING": {get_param: prometheus_monitoring}
             "$KUBE_API_PUBLIC_ADDRESS": {get_attr: [api_address_switch, public_ip]}
             "$KUBE_API_PRIVATE_ADDRESS": {get_attr: [api_address_switch, private_ip]}
@@ -461,6 +474,7 @@ resources:
             "$KUBECONTROLLER_OPTIONS": {get_param: kubecontroller_options}
             "$KUBEPROXY_OPTIONS": {get_param: kubeproxy_options}
             "$KUBESCHEDULER_OPTIONS": {get_param: kubescheduler_options}
+            "$OCTAVIA_ENABLED": {get_param: octavia_enabled}
 
   install_openstack_ca:
     type: OS::Heat::SoftwareConfig
