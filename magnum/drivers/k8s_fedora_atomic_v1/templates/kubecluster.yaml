@@ -325,7 +325,21 @@ parameters:
   kube_tag:
     type: string
     description: tag of the k8s containers used to provision the kubernetes cluster
-    default: v1.9.3
+    default: v1.11.5-1
+
+  # FIXME update cloud_provider_tag when a fix for PVC is released
+  # https://github.com/kubernetes/cloud-provider-openstack/pull/405
+  cloud_provider_tag:
+    type: string
+    description:
+      tag of the kubernetes/cloud-provider-openstack
+      https://hub.docker.com/r/k8scloudprovider/openstack-cloud-controller-manager/tags/
+    default: v0.2.0
+
+  cloud_provider_enabled:
+    type: boolean
+    description: Enable or disable the openstack kubernetes cloud provider
+    default: true
 
   etcd_tag:
     type: string
@@ -340,7 +354,7 @@ parameters:
   kube_version:
     type: string
     description: version of kubernetes used for kubernetes cluster
-    default: v1.9.3
+    default: v1.11.5
 
   kube_dashboard_version:
     type: string
@@ -474,11 +488,6 @@ parameters:
     description: >
       whether or not to use Octavia for LoadBalancer type service.
     default: False
-
-  cloud_provider_enabled:
-    type: boolean
-    description: Enable or disable the openstack kubernetes cloud provider
-    default: true
 
 resources:
 
@@ -622,7 +631,6 @@ resources:
             list_join:
               - '-'
               - [{ get_param: 'OS::stack_name' }, 'master', '%index%']
-          master_index: '%index%'
           prometheus_monitoring: {get_param: prometheus_monitoring}
           grafana_admin_passwd: {get_param: grafana_admin_passwd}
           api_public_address: {get_attr: [api_lb, floating_address]}
@@ -637,7 +645,6 @@ resources:
           docker_volume_type: {get_param: docker_volume_type}
           docker_storage_driver: {get_param: docker_storage_driver}
           cgroup_driver: {get_param: cgroup_driver}
-          wait_condition_timeout: {get_param: wait_condition_timeout}
           network_driver: {get_param: network_driver}
           flannel_network_cidr: {get_param: flannel_network_cidr}
           flannel_network_subnetlen: {get_param: flannel_network_subnetlen}
@@ -667,6 +674,8 @@ resources:
           https_proxy: {get_param: https_proxy}
           no_proxy: {get_param: no_proxy}
           kube_tag: {get_param: kube_tag}
+          cloud_provider_tag: {get_param: cloud_provider_tag}
+          cloud_provider_enabled: {get_param: cloud_provider_enabled}
           kube_version: {get_param: kube_version}
           etcd_tag: {get_param: etcd_tag}
           flannel_tag: {get_param: flannel_tag}
@@ -675,7 +684,6 @@ resources:
           trustee_password: {get_param: trustee_password}
           trust_id: {get_param: trust_id}
           auth_url: {get_param: auth_url}
-          cloud_provider_enabled: {get_param: cloud_provider_enabled}
           insecure_registry_url: {get_param: insecure_registry_url}
           container_infra_prefix: {get_param: container_infra_prefix}
           etcd_lb_vip: {get_attr: [etcd_lb, address]}
@@ -699,6 +707,41 @@ resources:
           kubecontroller_options: {get_param: kubecontroller_options}
           kubescheduler_options: {get_param: kubescheduler_options}
           octavia_enabled: {get_param: octavia_enabled}
+
+  kube_cluster_config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      config:
+        list_join:
+          - "\n"
+          -
+            - get_file: ../../common/templates/kubernetes/fragments/kube-apiserver-to-kubelet-role.sh
+            - str_replace:
+                template: {get_file: ../../common/templates/kubernetes/fragments/enable-cert-api-manager.sh}
+                params:
+                  "$CA_KEY": {get_param: ca_key}
+            - get_file: ../../common/templates/kubernetes/fragments/core-dns-service.sh
+            - str_replace:
+                template: {get_file: ../../common/templates/kubernetes/fragments/enable-prometheus-monitoring.sh}
+                params:
+                  "$ADMIN_PASSWD": {get_param: grafana_admin_passwd}
+            - get_file: ../../common/templates/kubernetes/fragments/calico-service.sh
+            - str_replace:
+                params:
+                  $enable-ingress-traefik: {get_file: ../../common/templates/kubernetes/fragments/enable-ingress-traefik.sh}
+                template: {get_file: ../../common/templates/kubernetes/fragments/enable-ingress-controller.sh}
+            - get_file: ../../common/templates/kubernetes/fragments/kube-dashboard-service.sh
+
+  kube_cluster_deploy:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      actions: ['CREATE']
+      signal_transport: HEAT_SIGNAL
+      config:
+        get_resource: kube_cluster_config
+      server:
+        get_attr: [kube_masters, resource.0]
 
   ######################################################################
   #
