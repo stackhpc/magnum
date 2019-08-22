@@ -236,6 +236,7 @@ class TestClusterConductorWithK8s(base.TestCase):
             'ssh_key_name': 'keypair_id',
             'external_network': 'e2a6c8b0-a3c2-42a3-b3f4-01400a30896e',
             'fixed_network': 'fixed_network',
+            'fixed_network_name': 'fixed_network',
             'fixed_subnet': 'fixed_subnet',
             'network_driver': 'network_driver',
             'volume_driver': 'volume_driver',
@@ -366,6 +367,7 @@ class TestClusterConductorWithK8s(base.TestCase):
             'etcd_volume_size': None,
             'external_network': 'e2a6c8b0-a3c2-42a3-b3f4-01400a30896e',
             'fixed_network': 'fixed_network',
+            'fixed_network_name': 'fixed_network',
             'fixed_subnet': 'fixed_subnet',
             'flannel_backend': 'vxlan',
             'flannel_network_cidr': '10.101.0.0/16',
@@ -449,7 +451,7 @@ class TestClusterConductorWithK8s(base.TestCase):
             mock_get):
 
         not_required = ['image_id', 'flavor_id', 'dns_nameserver',
-                        'docker_volume_size', 'fixed_network', 'http_proxy',
+                        'docker_volume_size', 'http_proxy',
                         'https_proxy', 'no_proxy', 'network_driver',
                         'master_flavor_id', 'docker_storage_driver',
                         'volume_driver', 'fixed_subnet']
@@ -486,6 +488,8 @@ class TestClusterConductorWithK8s(base.TestCase):
             'docker_volume_size': 20,
             'master_flavor': 'master_flavor_id',
             'minion_flavor': 'flavor_id',
+            'fixed_network': 'fixed_network',
+            'fixed_network_name': 'fixed_network',
             'external_network': 'e2a6c8b0-a3c2-42a3-b3f4-01400a30896e',
             'flannel_backend': 'vxlan',
             'flannel_network_cidr': '10.101.0.0/16',
@@ -536,7 +540,7 @@ class TestClusterConductorWithK8s(base.TestCase):
         }
         self.assertEqual(expected, definition)
         self.assertEqual(
-            ['../../common/templates/environments/with_private_network.yaml',
+            ['../../common/templates/environments/no_private_network.yaml',
              '../../common/templates/environments/no_etcd_volume.yaml',
              '../../common/templates/environments/with_volume.yaml',
              '../../common/templates/environments/no_master_lb.yaml',
@@ -576,6 +580,7 @@ class TestClusterConductorWithK8s(base.TestCase):
             'ssh_key_name': 'keypair_id',
             'external_network': 'e2a6c8b0-a3c2-42a3-b3f4-01400a30896e',
             'fixed_network': 'fixed_network',
+            'fixed_network_name': 'fixed_network',
             'fixed_subnet': 'fixed_subnet',
             'availability_zone': 'az_1',
             'nodes_affinity_policy': 'soft-anti-affinity',
@@ -675,6 +680,7 @@ class TestClusterConductorWithK8s(base.TestCase):
             'availability_zone': 'az_1',
             'external_network': 'e2a6c8b0-a3c2-42a3-b3f4-01400a30896e',
             'fixed_network': 'fixed_network',
+            'fixed_network_name': 'fixed_network',
             'fixed_subnet': 'fixed_subnet',
             'dns_nameserver': 'dns_nameserver',
             'docker_storage_driver': u'devicemapper',
@@ -918,6 +924,7 @@ class TestClusterConductorWithK8s(base.TestCase):
             'ssh_key_name': 'keypair_id',
             'external_network': 'e2a6c8b0-a3c2-42a3-b3f4-01400a30896e',
             'fixed_network': 'fixed_network',
+            'fixed_network_name': 'fixed_network',
             'fixed_subnet': 'fixed_subnet',
             'dns_nameserver': 'dns_nameserver',
             'server_image': 'image_id',

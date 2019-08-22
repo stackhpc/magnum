@@ -47,6 +47,6 @@ EOF
     cat > ${KUBE_OS_CLOUD_CONFIG}-occm <<EOF
 $CLOUD_CONFIG
 [Networking]
-internal-network-name=$CLUSTER_NETWORK
+internal-network-name=$CLUSTER_NETWORK_NAME
 EOF
 fi
