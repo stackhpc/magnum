@@ -232,6 +232,7 @@ class TestClusterConductorWithK8s(base.TestCase):
             'insecure_registry': '10.0.0.1:5000',
         }
         expected = {
+            'cloud_provider_enabled': 'false',
             'ssh_key_name': 'keypair_id',
             'external_network': 'e2a6c8b0-a3c2-42a3-b3f4-01400a30896e',
             'fixed_network': 'fixed_network',
@@ -355,6 +356,7 @@ class TestClusterConductorWithK8s(base.TestCase):
 
         expected = {
             'auth_url': 'http://192.168.10.10:5000/v3',
+            'cloud_provider_enabled': 'true',
             'cluster_uuid': '5d12f6fd-a196-4bf0-ae4c-1f639a523a52',
             'discovery_url': 'https://discovery.etcd.io/test',
             'dns_nameserver': 'dns_nameserver',
@@ -478,6 +480,7 @@ class TestClusterConductorWithK8s(base.TestCase):
 
         expected = {
             'auth_url': 'http://192.168.10.10:5000/v3',
+            'cloud_provider_enabled': 'false',
             'cluster_uuid': '5d12f6fd-a196-4bf0-ae4c-1f639a523a52',
             'discovery_url': 'https://discovery.etcd.io/test',
             'docker_volume_size': 20,
@@ -911,6 +914,7 @@ class TestClusterConductorWithK8s(base.TestCase):
                                                                  cluster)
 
         expected = {
+            'cloud_provider_enabled': 'false',
             'ssh_key_name': 'keypair_id',
             'external_network': 'e2a6c8b0-a3c2-42a3-b3f4-01400a30896e',
             'fixed_network': 'fixed_network',
@@ -985,8 +989,7 @@ class TestClusterConductorWithK8s(base.TestCase):
              '../../common/templates/environments/disable_lb_floating_ip.yaml',
              ],
             env_files)
-        reqget.assert_called_once_with('http://etcd/test?size=1', proxies={
-            'http': 'http_proxy', 'https': 'https_proxy'})
+        reqget.assert_called_once_with('http://etcd/test?size=1')
 
     @patch('magnum.common.short_id.generate_id')
     @patch('heatclient.common.template_utils.get_template_contents')

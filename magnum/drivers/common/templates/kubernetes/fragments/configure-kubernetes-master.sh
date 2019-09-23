@@ -18,8 +18,12 @@ fi
 
 _prefix=${CONTAINER_INFRA_PREFIX:-docker.io/openstackmagnum/}
 
+rm -rf /etc/cni/net.d/*
+rm -rf /var/lib/cni/*
+rm -rf /opt/cni/*
 mkdir -p /opt/cni
-_addtl_mounts=',{"type":"bind","source":"/opt/cni","destination":"/opt/cni","options":["bind","rw","slave","mode=777"]}'
+mkdir -p /etc/cni/net.d/
+_addtl_mounts=',{"type":"bind","source":"/opt/cni","destination":"/opt/cni","options":["bind","rw","slave","mode=777"]},{"type":"bind","source":"/var/lib/docker","destination":"/var/lib/docker","options":["bind","rw","slave","mode=755"]}'
 
 if [ "$NETWORK_DRIVER" = "calico" ]; then
     if [ "`systemctl status NetworkManager.service | grep -o "Active: active"`" = "Active: active" ]; then
@@ -33,6 +37,8 @@ unmanaged-devices=interface-name:cali*;interface-name:tunl*
 EOF
 }
         systemctl restart NetworkManager
+        echo "net.ipv4.conf.all.rp_filter = 1" >> /etc/sysctl.conf
+        sysctl -p
     fi
 fi
 
@@ -106,7 +112,7 @@ if [ -n "${ADMISSION_CONTROL_LIST}" ] && [ "${TLS_DISABLED}" == "False" ]; then
     KUBE_ADMISSION_CONTROL="--admission-control=NodeRestriction,${ADMISSION_CONTROL_LIST}"
 fi
 
-if [ -n "$TRUST_ID" ] && [ "$(echo "${CLOUD_PROVIDER_ENABLED}" | tr '[:upper:]' '[:lower:]')" = "true" ]; then
+if [ "$(echo "${CLOUD_PROVIDER_ENABLED}" | tr '[:upper:]' '[:lower:]')" = "true" ]; then
     KUBE_API_ARGS="$KUBE_API_ARGS --cloud-provider=external"
 fi
 
@@ -160,7 +166,7 @@ if [ -n "${ADMISSION_CONTROL_LIST}" ] && [ "${TLS_DISABLED}" == "False" ]; then
     KUBE_CONTROLLER_MANAGER_ARGS="$KUBE_CONTROLLER_MANAGER_ARGS --service-account-private-key-file=$CERT_DIR/service_account_private.key --root-ca-file=$CERT_DIR/ca.crt"
 fi
 
-if [ -n "$TRUST_ID" ] && [ "$(echo "${CLOUD_PROVIDER_ENABLED}" | tr '[:upper:]' '[:lower:]')" = "true" ]; then
+if [ "$(echo "${CLOUD_PROVIDER_ENABLED}" | tr '[:upper:]' '[:lower:]')" = "true" ]; then
     KUBE_CONTROLLER_MANAGER_ARGS="$KUBE_CONTROLLER_MANAGER_ARGS --cloud-provider=external"
     KUBE_CONTROLLER_MANAGER_ARGS="$KUBE_CONTROLLER_MANAGER_ARGS --external-cloud-volume-plugin=openstack --cloud-config=/etc/kubernetes/cloud-config"
 fi
@@ -185,7 +191,7 @@ KUBELET_ARGS="${KUBELET_ARGS} --cluster_dns=${DNS_SERVICE_IP} --cluster_domain=$
 KUBELET_ARGS="${KUBELET_ARGS} --volume-plugin-dir=/var/lib/kubelet/volumeplugins"
 KUBELET_ARGS="${KUBELET_ARGS} ${KUBELET_OPTIONS}"
 
-if [ -n "$TRUST_ID" ] && [ "$(echo "${CLOUD_PROVIDER_ENABLED}" | tr '[:upper:]' '[:lower:]')" = "true" ]; then
+if [ "$(echo "${CLOUD_PROVIDER_ENABLED}" | tr '[:upper:]' '[:lower:]')" = "true" ]; then
     KUBELET_ARGS="${KUBELET_ARGS} --cloud-provider=external"
 fi
 
