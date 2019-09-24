@@ -401,6 +401,8 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         mock_get_fixed_network_name.return_value = fixed_network_name
         fixed_network = '5d12f6fd-a196-4bf0-ae4c-1f639a523a52'
         mock_cluster_template.fixed_network = fixed_network
+        fixed_subnet = 'f2a6c8b0-a3c2-42a3-b3f4-1f639a523a53'
+        mock_cluster_template.fixed_subnet = fixed_subnet
         mock_cluster = mock.MagicMock()
         mock_cluster.uuid = '5d12f6fd-a196-4bf0-ae4c-1f639a523a52'
         del mock_cluster.stack_id
@@ -544,6 +546,7 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'kube_tag': kube_tag,
             'etcd_tag': etcd_tag,
             'fixed_network_name': fixed_network_name,
+            'fixed_subnet': fixed_subnet,
             'flannel_tag': flannel_tag,
             'flannel_cni_tag': flannel_cni_tag,
             'container_infra_prefix': container_infra_prefix,
@@ -644,6 +647,8 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         mock_cluster_template.registry_enabled = False
         mock_cluster_template.network_driver = 'calico'
         mock_cluster_template.external_network_id = 'public'
+        fixed_subnet = 'f2a6c8b0-a3c2-42a3-b3f4-1f639a523a53'
+        mock_cluster_template.fixed_subnet = fixed_subnet
 
         mock_cluster = mock.MagicMock()
         mock_cluster.labels = {}
@@ -700,6 +705,8 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         mock_cluster_template.network_driver = 'calico'
         external_network_id = 'e2a6c8b0-a3c2-42a3-b3f4-01400a30896e'
         mock_cluster_template.external_network_id = external_network_id
+        fixed_subnet = 'f2a6c8b0-a3c2-42a3-b3f4-1f639a523a53'
+        mock_cluster_template.fixed_subnet = fixed_subnet
 
         mock_cluster = mock.MagicMock()
         mock_cluster.labels = {"ingress_controller": "octavia"}
@@ -753,6 +760,8 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         mock_cluster_template.network_driver = 'calico'
         external_network_id = 'e2a6c8b0-a3c2-42a3-b3f4-01400a30896e'
         mock_cluster_template.external_network_id = external_network_id
+        fixed_subnet = 'f2a6c8b0-a3c2-42a3-b3f4-1f639a523a53'
+        mock_cluster_template.fixed_subnet = fixed_subnet
 
         mock_cluster = mock.MagicMock()
         mock_cluster.labels = {"ingress_controller": "octavia"}
@@ -803,6 +812,8 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         mock_cluster_template.external_network_id = external_network_id
         fixed_network_name = 'fixed_network'
         mock_cluster_template.fixed_network = fixed_network_name
+        fixed_subnet = 'f2a6c8b0-a3c2-42a3-b3f4-1f639a523a53'
+        mock_cluster_template.fixed_subnet = fixed_subnet
         mock_cluster = mock.MagicMock()
         mock_cluster.uuid = '5d12f6fd-a196-4bf0-ae4c-1f639a523a52'
         del mock_cluster.stack_id
@@ -926,6 +937,7 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'system_pods_initial_delay': system_pods_initial_delay,
             'system_pods_timeout': system_pods_timeout,
             'fixed_network_name': fixed_network_name,
+            'fixed_subnet': fixed_subnet,
             'admission_control_list': admission_control_list,
             'prometheus_monitoring': prometheus_monitoring,
             'grafana_admin_passwd': grafana_admin_passwd,

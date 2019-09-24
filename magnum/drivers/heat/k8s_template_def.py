@@ -109,7 +109,7 @@ class K8sTemplateDefinition(template_def.BaseTemplateDefinition):
         # field name is confused. If external_network_id is not specified in
         # cluster template use 'public' as the default value, which is the same
         # with the heat template default value as before.
-        external_network = cluster_template.external_network_id or "public"
+        external_network = cluster_template.external_network_id
         extra_params['external_network'] = \
             neutron.get_external_network_id(context, external_network)
 
@@ -118,9 +118,18 @@ class K8sTemplateDefinition(template_def.BaseTemplateDefinition):
         # accepts a name as an argument to internal-network-name in the
         # cloud-config file provided to it. The default fixed network name is
         # the same as that defined in the heat template.
-        fixed_network = cluster_template.fixed_network or "private"
-        extra_params['fixed_network_name'] = \
-            neutron.get_fixed_network_name(context, fixed_network)
+        fixed_network = cluster_template.fixed_network
+        if fixed_network:
+            extra_params['fixed_network_name'] = \
+                neutron.get_fixed_network_name(context, fixed_network)
+
+        # NOTE(brtknr): Convert fixed subnet name to UUID. If fixed_subnet
+        # is not specified in cluster template use 'private' as the default
+        # value, which is the same as the heat template default value.
+        fixed_subnet = cluster_template.fixed_subnet
+        if fixed_subnet:
+            extra_params['fixed_subnet'] = \
+                neutron.get_fixed_subnet_id(context, fixed_subnet)
 
         label_list = ['flannel_network_cidr', 'flannel_backend',
                       'flannel_network_subnetlen',
