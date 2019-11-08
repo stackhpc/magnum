@@ -397,6 +397,7 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         mock_cluster_template.network_driver = 'flannel'
         external_network_id = '17e4e301-b7f3-4996-b3dd-97b3a700174b'
         mock_cluster_template.external_network_id = external_network_id
+        mock_cluster = mock.MagicMock()
         fixed_network_name = 'fixed_network'
         mock_get_fixed_network_name.return_value = fixed_network_name
         fixed_network = '5d12f6fd-a196-4bf0-ae4c-1f639a523a52'
