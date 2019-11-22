@@ -83,6 +83,7 @@ sed -i '
 ' /etc/kubernetes/config
 
 KUBE_API_ARGS="--runtime-config=api/all=true"
+KUBE_API_ARGS="$KUBE_API_ARGS --allow-privileged=$KUBE_ALLOW_PRIV"
 KUBE_API_ARGS="$KUBE_API_ARGS --kubelet-preferred-address-types=InternalIP,Hostname,ExternalIP"
 KUBE_API_ARGS="$KUBE_API_ARGS $KUBEAPI_OPTIONS"
 if [ "$TLS_DISABLED" == "True" ]; then
@@ -204,7 +205,6 @@ fi
 
 KUBELET_ARGS="${KUBELET_ARGS} --network-plugin=cni --cni-conf-dir=/etc/cni/net.d --cni-bin-dir=/opt/cni/bin"
 KUBELET_ARGS="${KUBELET_ARGS} --register-with-taints=CriticalAddonsOnly=True:NoSchedule,dedicated=master:NoSchedule"
-KUBELET_ARGS="${KUBELET_ARGS} --node-labels=node-role.kubernetes.io/master=\"\""
 
 KUBELET_KUBECONFIG=/etc/kubernetes/kubelet-config.yaml
 HOSTNAME_OVERRIDE=$(hostname --short | sed 's/\.novalocal//')
