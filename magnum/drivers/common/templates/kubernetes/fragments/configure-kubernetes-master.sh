@@ -18,8 +18,30 @@ fi
 
 _prefix=${CONTAINER_INFRA_PREFIX:-docker.io/openstackmagnum/}
 
+rm -rf /etc/cni/net.d/*
+rm -rf /var/lib/cni/*
+rm -rf /opt/cni/*
 mkdir -p /opt/cni
-_addtl_mounts=',{"type":"bind","source":"/opt/cni","destination":"/opt/cni","options":["bind","rw","slave","mode=777"]}'
+mkdir -p /etc/cni/net.d/
+_addtl_mounts=',{"type":"bind","source":"/opt/cni","destination":"/opt/cni","options":["bind","rw","slave","mode=777"]},{"type":"bind","source":"/var/lib/docker","destination":"/var/lib/docker","options":["bind","rw","slave","mode=755"]}'
+
+if [ "$NETWORK_DRIVER" = "calico" ]; then
+    echo "net.ipv4.conf.all.rp_filter = 1" >> /etc/sysctl.conf
+    sysctl -p
+    if [ "`systemctl status NetworkManager.service | grep -o "Active: active"`" = "Active: active" ]; then
+        CALICO_NM=/etc/NetworkManager/conf.d/calico.conf
+        [ -f ${CALICO_NM} ] || {
+        echo "Writing File: $CALICO_NM"
+        mkdir -p $(dirname ${CALICO_NM})
+        cat << EOF > ${CALICO_NM}
+[keyfile]
+unmanaged-devices=interface-name:cali*;interface-name:tunl*
+EOF
+}
+        systemctl restart NetworkManager
+    fi
+fi
+
 atomic install --storage ostree --system --set=ADDTL_MOUNTS=${_addtl_mounts} --system-package=no --name=kubelet ${_prefix}kubernetes-kubelet:${KUBE_TAG}
 atomic install --storage ostree --system --system-package=no --name=kube-apiserver ${_prefix}kubernetes-apiserver:${KUBE_TAG}
 atomic install --storage ostree --system --system-package=no --name=kube-controller-manager ${_prefix}kubernetes-controller-manager:${KUBE_TAG}
@@ -67,6 +89,7 @@ sed -i '
 ' /etc/kubernetes/config
 
 KUBE_API_ARGS="--runtime-config=api/all=true"
+KUBE_API_ARGS="$KUBE_API_ARGS --allow-privileged=$KUBE_ALLOW_PRIV"
 KUBE_API_ARGS="$KUBE_API_ARGS --kubelet-preferred-address-types=InternalIP,Hostname,ExternalIP"
 KUBE_API_ARGS="$KUBE_API_ARGS $KUBEAPI_OPTIONS"
 if [ "$TLS_DISABLED" == "True" ]; then
@@ -157,8 +180,7 @@ sed -i '
 sed -i '/^KUBE_SCHEDULER_ARGS=/ s/=.*/="--leader-elect=true"/' /etc/kubernetes/scheduler
 
 mkdir -p /etc/kubernetes/manifests
-HOSTNAME_OVERRIDE=$(hostname --short | sed 's/\.novalocal//')
-KUBELET_ARGS="--register-node=true --pod-manifest-path=/etc/kubernetes/manifests --cadvisor-port=0 --hostname-override=${HOSTNAME_OVERRIDE}"
+KUBELET_ARGS="--register-node=true --pod-manifest-path=/etc/kubernetes/manifests --cadvisor-port=0 --hostname-override=${INSTANCE_NAME}"
 KUBELET_ARGS="${KUBELET_ARGS} --pod-infra-container-image=${CONTAINER_INFRA_PREFIX:-gcr.io/google_containers/}pause:3.0"
 KUBELET_ARGS="${KUBELET_ARGS} --cluster_dns=${DNS_SERVICE_IP} --cluster_domain=${DNS_CLUSTER_DOMAIN}"
 KUBELET_ARGS="${KUBELET_ARGS} --volume-plugin-dir=/var/lib/kubelet/volumeplugins"
@@ -179,10 +201,8 @@ if [ "$NETWORK_DRIVER" = "calico" ]; then
     KUBELET_ARGS="${KUBELET_ARGS} --network-plugin=cni --cni-conf-dir=/etc/cni/net.d --cni-bin-dir=/opt/cni/bin"
 fi
 KUBELET_ARGS="${KUBELET_ARGS} --register-with-taints=CriticalAddonsOnly=True:NoSchedule,dedicated=master:NoSchedule"
-KUBELET_ARGS="${KUBELET_ARGS} --node-labels=node-role.kubernetes.io/master=\"\""
 
 KUBELET_KUBECONFIG=/etc/kubernetes/kubelet-config.yaml
-HOSTNAME_OVERRIDE=$(hostname --short | sed 's/\.novalocal//')
 cat << EOF >> ${KUBELET_KUBECONFIG}
 apiVersion: v1
 clusters:
@@ -193,13 +213,13 @@ clusters:
 contexts:
 - context:
     cluster: kubernetes
-    user: system:node:${HOSTNAME_OVERRIDE}
+    user: system:node:${INSTANCE_NAME}
   name: default
 current-context: default
 kind: Config
 preferences: {}
 users:
-- name: system:node:${HOSTNAME_OVERRIDE}
+- name: system:node:${INSTANCE_NAME}
   user:
     as-user-extra: {}
     client-certificate: ${CERT_DIR}/server.crt
