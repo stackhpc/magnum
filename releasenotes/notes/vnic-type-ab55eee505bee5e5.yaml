@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Add support for `vnic_type` and `master_vnic_type` labels to make this
+    configurable beyond the current support for `normal` mode. This extends
+    support to other types of ports (e.g. SR-IOV ports).

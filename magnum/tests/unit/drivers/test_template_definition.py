@@ -607,6 +607,8 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         metrics_scraper_tag = mock_cluster.labels.get('metrics_scraper_tag')
         master_lb_allowed_cidrs = mock_cluster.labels.get(
             'master_lb_allowed_cidrs')
+        vnic_type = mock_cluster.labels.get('vnic_type')
+        master_vnic_type = mock_cluster.labels.get('master_vnic_type')
 
         k8s_def = k8sa_tdef.AtomicK8sTemplateDefinition()
 
@@ -723,6 +725,8 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'metrics_scraper_tag': metrics_scraper_tag,
             'master_lb_allowed_cidrs': master_lb_allowed_cidrs,
             'fixed_subnet_cidr': '20.200.0.0/16',
+            'vnic_type': vnic_type,
+            'master_vnic_type': master_vnic_type,
         }}
         mock_get_params.assert_called_once_with(mock_context,
                                                 mock_cluster_template,
@@ -1136,9 +1140,10 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'containerd_tarball_sha256')
         kube_image_digest = mock_cluster.labels.get('kube_image_digest')
         metrics_scraper_tag = mock_cluster.labels.get('metrics_scraper_tag')
-
         master_lb_allowed_cidrs = mock_cluster.labels.get(
             'master_lb_allowed_cidrs')
+        vnic_type = mock_cluster.labels.get('vnic_type')
+        master_vnic_type = mock_cluster.labels.get('master_vnic_type')
 
         k8s_def = k8sa_tdef.AtomicK8sTemplateDefinition()
 
@@ -1257,6 +1262,8 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'metrics_scraper_tag': metrics_scraper_tag,
             'master_lb_allowed_cidrs': master_lb_allowed_cidrs,
             'fixed_subnet_cidr': '20.200.0.0/16',
+            'vnic_type': vnic_type,
+            'master_vnic_type': master_vnic_type,
         }}
         mock_get_params.assert_called_once_with(mock_context,
                                                 mock_cluster_template,
