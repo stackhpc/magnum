@@ -485,6 +485,11 @@ the table are linked to more details elsewhere in the user guide.
 +---------------------------------------+--------------------+---------------+
 | `fixed_subnet_cidr`_                  | see below          | ""            |
 +---------------------------------------+--------------------+---------------+
+| `vnic_type`_                          | see below          | "normal"      |
++---------------------------------------+--------------------+---------------+
+| `master_vnic_type`_                   | see below          | "normal       |
++---------------------------------------+--------------------+---------------+
+
 
 .. _cluster:
 
@@ -1640,6 +1645,15 @@ _`fixed_subnet_cidr`
   CIDR of the fixed subnet created by Magnum when a user has not
   specified an existing fixed_subnet during cluster creation.
   Ussuri default: 10.0.0.0/24
+
+_`vnic_type`
+  The vnic type to use for ports attached to worker nodes. This allows
+  the user to, for example, attach SR-IOV ports to instances.
+  Default: normal
+
+_`master_vnic_type`
+  The vnic type to use for ports attached to worker nodes.
+  Default: normal
 
 External load balancer for services
 -----------------------------------
