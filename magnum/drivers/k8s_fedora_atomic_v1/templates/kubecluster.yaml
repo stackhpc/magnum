@@ -26,6 +26,12 @@ conditions:
       - get_param: worker_role
       - ""
 
+  use_master_vnic_type:
+    not:
+      equals:
+      - get_param: master_vnic_type
+      - ""
+
   master_only:
     or:
     - create_cluster_resources
@@ -920,6 +926,18 @@ parameters:
       specific configs
     default: ""
 
+  vnic_type:
+    type: string
+    description: vnic type for ports attached to nodes
+    default: "normal"
+
+  master_vnic_type:
+    type: string
+    description: >
+      vnic type for ports attached to master nodes which defaults to
+      vnic_type when undefined.
+    default: ""
+
 resources:
 
   ######################################################################
@@ -1158,6 +1176,11 @@ resources:
           cluster_uuid: {get_param: cluster_uuid}
           magnum_url: {get_param: magnum_url}
           traefik_ingress_controller_tag: {get_param: traefik_ingress_controller_tag}
+          vnic_type:
+            if:
+              - use_master_vnic_type
+              - get_param: master_vnic_type
+              - get_param: vnic_type
           volume_driver: {get_param: volume_driver}
           region_name: {get_param: region_name}
           fixed_network: {get_attr: [network, fixed_network]}
@@ -1387,6 +1410,7 @@ resources:
           registry_chunksize: {get_param: registry_chunksize}
           cluster_uuid: {get_param: cluster_uuid}
           magnum_url: {get_param: magnum_url}
+          vnic_type: {get_param: vnic_type}
           volume_driver: {get_param: volume_driver}
           region_name: {get_param: region_name}
           auth_url: {get_param: auth_url}

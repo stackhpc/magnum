@@ -104,6 +104,10 @@ parameters:
       the docker cgroup driver.
     default: "cgroupfs"
 
+  vnic_type:
+    type: string
+    description: vnic type for ports attached to nodes
+
   volume_driver:
     type: string
     description: volume driver to use for container storage
@@ -922,6 +926,7 @@ resources:
       allowed_address_pairs:
         - ip_address: {get_param: pods_network_cidr}
       replacement_policy: AUTO
+      binding:vnic_type: {get_param: vnic_type}
 
   kube_master_floating:
     type: Magnum::Optional::KubeMaster::Neutron::FloatingIP

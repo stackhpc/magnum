@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    Add support for `vnic_type` label to support modes other than `normal`
+    (default mode) for supporting SR-IOV nics. A separate `master_vnic_type`
+    can be defined for master nodes which defaults to the value of `vnic_type`
+    when undefined.
