@@ -365,6 +365,7 @@ class TestClusterConductorWithK8s(base.TestCase):
             'kubescheduler_options': '--kubescheduler',
             'kubeproxy_options': '--kubeproxy',
             'octavia_enabled': False,
+            'octavia_provider': None,
             'kube_service_account_key': 'public_key',
             'kube_service_account_private_key': 'private_key',
             'portal_network_cidr': '10.254.0.0/16',
@@ -522,6 +523,7 @@ class TestClusterConductorWithK8s(base.TestCase):
             'kubescheduler_options': '--kubescheduler',
             'kubeproxy_options': '--kubeproxy',
             'octavia_enabled': False,
+            'octavia_provider': None,
             'kube_service_account_key': 'public_key',
             'kube_service_account_private_key': 'private_key',
             'portal_network_cidr': '10.254.0.0/16',
@@ -538,7 +540,7 @@ class TestClusterConductorWithK8s(base.TestCase):
             'worker_nodegroup_name': 'worker_ng',
             'post_install_manifest_url': '',
             'master_lb_allowed_cidrs': None,
-            'fixed_subnet_cidr': self.fixed_subnet_cidr
+            'fixed_subnet_cidr': self.fixed_subnet_cidr,
         }
 
         self.assertEqual(expected, definition)
@@ -662,6 +664,7 @@ class TestClusterConductorWithK8s(base.TestCase):
             'kubescheduler_options': '--kubescheduler',
             'kubeproxy_options': '--kubeproxy',
             'octavia_enabled': False,
+            'octavia_provider': None,
             'kube_service_account_key': 'public_key',
             'kube_service_account_private_key': 'private_key',
             'portal_network_cidr': '10.254.0.0/16',
@@ -676,7 +679,7 @@ class TestClusterConductorWithK8s(base.TestCase):
             'worker_nodegroup_name': 'worker_ng',
             'post_install_manifest_url': '',
             'master_lb_allowed_cidrs': None,
-            'fixed_subnet_cidr': self.fixed_subnet_cidr
+            'fixed_subnet_cidr': self.fixed_subnet_cidr,
         }
         self.assertEqual(expected, definition)
         self.assertEqual(
@@ -787,6 +790,7 @@ class TestClusterConductorWithK8s(base.TestCase):
             'kubescheduler_options': '--kubescheduler',
             'kubeproxy_options': '--kubeproxy',
             'octavia_enabled': False,
+            'octavia_provider': None,
             'portal_network_cidr': '10.254.0.0/16',
             'master_role': 'master',
             'worker_role': 'worker',
@@ -902,6 +906,7 @@ class TestClusterConductorWithK8s(base.TestCase):
             'kubescheduler_options': '--kubescheduler',
             'kubeproxy_options': '--kubeproxy',
             'octavia_enabled': False,
+            'octavia_provider': None,
             'portal_network_cidr': '10.254.0.0/16',
             'master_role': 'master',
             'worker_role': 'worker',
@@ -1143,6 +1148,7 @@ class TestClusterConductorWithK8s(base.TestCase):
             'kubescheduler_options': '--kubescheduler',
             'kubeproxy_options': '--kubeproxy',
             'octavia_enabled': False,
+            'octavia_provider': None,
             'kube_service_account_key': 'public_key',
             'kube_service_account_private_key': 'private_key',
             'portal_network_cidr': '10.254.0.0/16',

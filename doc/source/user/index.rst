@@ -493,7 +493,8 @@ the table are linked to more details elsewhere in the user guide.
 +---------------------------------------+--------------------+---------------+
 | `extra_subnet`_                       | see below          | ""            |
 +---------------------------------------+--------------------+---------------+
-
+| `octavia_provider`_                   | see below          | amphora       |
++---------------------------------------+--------------------+---------------+
 
 .. _cluster:
 
@@ -1652,6 +1653,7 @@ _`fixed_subnet_cidr`
   specified an existing fixed_subnet during cluster creation.
   Ussuri default: 10.0.0.0/24
 
+<<<<<<< HEAD
 _`vnic_type`
   The vnic type to use for ports attached to worker nodes. This allows
   the user to, for example, attach SR-IOV ports to instances.
@@ -1671,6 +1673,10 @@ _`extra_subnet`
   Optional additional subnet name or UUID to add to cluster nodes.
   Only used when 'extra_network' is defined.
   Default: ""
+=======
+_`octavia_provider`
+  Octavia provider driver to be used for creating load balancers.
+>>>>>>> ce074bd1... Add support for choosing Octavia provider
 
 External load balancer for services
 -----------------------------------

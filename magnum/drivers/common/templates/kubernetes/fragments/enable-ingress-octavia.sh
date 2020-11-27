@@ -45,6 +45,7 @@ data:
       ca-file: /etc/kubernetes/ca-bundle.crt
     octavia:
       subnet-id: ${CLUSTER_SUBNET}
+      provider: ${OCTAVIA_PROVIDER}
       floating-network-id: ${EXTERNAL_NETWORK_ID}
 EOF
 )

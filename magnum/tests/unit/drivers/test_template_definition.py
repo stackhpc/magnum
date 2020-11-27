@@ -611,6 +611,7 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         master_vnic_type = mock_cluster.labels.get('master_vnic_type')
         extra_network = mock_cluster.labels.get('extra_network')
         extra_subnet = mock_cluster.labels.get('extra_subnet')
+        octavia_provider = mock_cluster.labels.get('octavia_provider')
 
         k8s_def = k8sa_tdef.AtomicK8sTemplateDefinition()
 
@@ -669,6 +670,7 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'nginx_ingress_controller_chart_tag':
                 nginx_ingress_controller_chart_tag,
             'octavia_enabled': False,
+            'octavia_provider': octavia_provider,
             'kube_service_account_key': 'public_key',
             'kube_service_account_private_key': 'private_key',
             'portal_network_cidr': service_cluster_ip_range,
@@ -1151,6 +1153,8 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         extra_network = mock_cluster.labels.get('extra_network')
         extra_subnet = mock_cluster.labels.get('extra_subnet')
 
+        octavia_provider = mock_cluster.labels.get('octavia_provider')
+
         k8s_def = k8sa_tdef.AtomicK8sTemplateDefinition()
 
         k8s_def.get_params(mock_context, mock_cluster_template, mock_cluster)
@@ -1210,6 +1214,7 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'nginx_ingress_controller_chart_tag':
                 nginx_ingress_controller_chart_tag,
             'octavia_enabled': False,
+            'octavia_provider': octavia_provider,
             'kube_service_account_key': 'public_key',
             'kube_service_account_private_key': 'private_key',
             'portal_network_cidr': service_cluster_ip_range,
