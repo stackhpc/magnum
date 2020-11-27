@@ -38,6 +38,7 @@ parameters:
 
   octavia_provider:
     type: string
+    default: amphora
     description: Octavia provider to use for load balancer
 
   octavia_lb_algorithm:
