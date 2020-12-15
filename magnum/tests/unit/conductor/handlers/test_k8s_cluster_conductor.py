@@ -383,6 +383,8 @@ class TestClusterConductorWithK8s(base.TestCase):
             'post_install_manifest_url': '',
             'master_lb_allowed_cidrs': None,
             'fixed_subnet_cidr': self.fixed_subnet_cidr,
+            'octavia_lb_algorithm': None,
+            'octavia_lb_healthcheck': None,
         }
 
         if missing_attr is not None:
@@ -541,6 +543,9 @@ class TestClusterConductorWithK8s(base.TestCase):
             'post_install_manifest_url': '',
             'master_lb_allowed_cidrs': None,
             'fixed_subnet_cidr': self.fixed_subnet_cidr,
+            'octavia_provider': None,
+            'octavia_lb_algorithm': None,
+            'octavia_lb_healthcheck': None,
         }
 
         self.assertEqual(expected, definition)
@@ -680,6 +685,12 @@ class TestClusterConductorWithK8s(base.TestCase):
             'post_install_manifest_url': '',
             'master_lb_allowed_cidrs': None,
             'fixed_subnet_cidr': self.fixed_subnet_cidr,
+<<<<<<< HEAD
+=======
+            'octavia_provider': None,
+            'octavia_lb_algorithm': None,
+            'octavia_lb_healthcheck': None,
+>>>>>>> a8214b81... Add support for disabling Octavia healthcheck
         }
         self.assertEqual(expected, definition)
         self.assertEqual(
@@ -798,6 +809,12 @@ class TestClusterConductorWithK8s(base.TestCase):
             'worker_nodegroup_name': 'worker_ng',
             'master_lb_allowed_cidrs': None,
             'fixed_subnet_cidr': self.fixed_subnet_cidr,
+<<<<<<< HEAD
+=======
+            'octavia_provider': None,
+            'octavia_lb_algorithm': None,
+            'octavia_lb_healthcheck': None,
+>>>>>>> a8214b81... Add support for disabling Octavia healthcheck
         }
         self.assertEqual(expected, definition)
         self.assertEqual(
@@ -914,6 +931,12 @@ class TestClusterConductorWithK8s(base.TestCase):
             'worker_nodegroup_name': 'worker_ng',
             'master_lb_allowed_cidrs': None,
             'fixed_subnet_cidr': self.fixed_subnet_cidr,
+<<<<<<< HEAD
+=======
+            'octavia_provider': None,
+            'octavia_lb_algorithm': None,
+            'octavia_lb_healthcheck': None,
+>>>>>>> a8214b81... Add support for disabling Octavia healthcheck
         }
         self.assertEqual(expected, definition)
         self.assertEqual(
@@ -1166,6 +1189,12 @@ class TestClusterConductorWithK8s(base.TestCase):
             'post_install_manifest_url': '',
             'master_lb_allowed_cidrs': None,
             'fixed_subnet_cidr': self.fixed_subnet_cidr,
+<<<<<<< HEAD
+=======
+            'octavia_provider': None,
+            'octavia_lb_algorithm': None,
+            'octavia_lb_healthcheck': None,
+>>>>>>> a8214b81... Add support for disabling Octavia healthcheck
         }
         self.assertEqual(expected, definition)
         self.assertEqual(

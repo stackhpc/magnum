@@ -657,6 +657,18 @@ parameters:
     description: >
       Octavia provider driver to use for LoadBalancer type service.
 
+  octavia_lb_algorithm:
+    type: string
+    default: ROUND_ROBIN
+    description: >
+      Octavia lb algorithm to use for LoadBalancer type service
+
+  octavia_lb_healthcheck:
+    type: boolean
+    description: >
+      if true, enable Octavia load balancer healthcheck
+    default: true
+
   kube_service_account_key:
     type: string
     hidden: true

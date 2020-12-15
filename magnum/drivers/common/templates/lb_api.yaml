@@ -10,6 +10,11 @@ conditions:
       - get_param: allowed_cidrs
       - []
 
+  octavia_lb_healthcheck_enabled:
+      equals:
+      - get_param: octavia_lb_healthcheck
+      - []
+
 parameters:
 
   fixed_subnet:
@@ -76,6 +81,7 @@ resources:
       protocol: {get_param: protocol}
 
   monitor:
+    condition: octavia_lb_healthcheck_enabled
     type: Magnum::Optional::Neutron::LBaaS::HealthMonitor
     properties:
       type: TCP
