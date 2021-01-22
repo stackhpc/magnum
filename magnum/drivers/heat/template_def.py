@@ -399,7 +399,15 @@ class BaseTemplateDefinition(TemplateDefinition):
         }
         if CONF.trust.trustee_keystone_region_name:
             kwargs['region_name'] = CONF.trust.trustee_keystone_region_name
-        extra_params['auth_url'] = osc.url_for(**kwargs).rstrip('/')
+        # NOTE: Sometimes, version discovery fails when Magnum cannot talk to
+        # Keystone via specified trustee_keystone_interface intended for
+        # cluster instances either because it is not unreachable from the
+        # controller or CA certs are missing for TLS enabled interface and the
+        # returned auth_url may not be suffixed with /v3 in which case append
+        # the url with the suffix so that instances can still talk to Keystone.
+        auth_url = osc.url_for(**kwargs).rstrip('/')
+        extra_params['auth_url'] = auth_url + ('' if auth_url.endswith('/v3')
+                                               else '/v3')
 
         return super(BaseTemplateDefinition,
                      self).get_params(context, cluster_template, cluster,
@@ -534,8 +542,8 @@ class BaseTemplateDefinition(TemplateDefinition):
         return dict()
 
 
-def add_lb_env_file(env_files, cluster_template):
-    if cluster_template.master_lb_enabled:
+def add_lb_env_file(env_files, cluster):
+    if cluster.master_lb_enabled:
         if keystone.is_octavia_enabled():
             env_files.append(COMMON_ENV_PATH + 'with_master_lb_octavia.yaml')
         else:
@@ -562,7 +570,7 @@ def add_etcd_volume_env_file(env_files, cluster):
         env_files.append(COMMON_ENV_PATH + 'with_etcd_volume.yaml')
 
 
-def add_fip_env_file(env_files, cluster_template, cluster):
+def add_fip_env_file(env_files, cluster):
     lb_fip_enabled = cluster.labels.get("master_lb_floating_ip_enabled")
     master_lb_fip_enabled = (strutils.bool_from_string(lb_fip_enabled) or
                              cluster.floating_ip_enabled)
@@ -572,7 +580,7 @@ def add_fip_env_file(env_files, cluster_template, cluster):
     else:
         env_files.append(COMMON_ENV_PATH + 'disable_floating_ip.yaml')
 
-    if cluster_template.master_lb_enabled and master_lb_fip_enabled:
+    if cluster.master_lb_enabled and master_lb_fip_enabled:
         env_files.append(COMMON_ENV_PATH + 'enable_lb_floating_ip.yaml')
     else:
         env_files.append(COMMON_ENV_PATH + 'disable_lb_floating_ip.yaml')
