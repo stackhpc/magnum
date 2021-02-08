@@ -228,6 +228,7 @@ class Cluster(base.APIBase):
                                          'labels', 'node_count', 'status',
                                          'master_flavor_id', 'flavor_id',
                                          'create_timeout', 'master_count',
+                                         'project_id',
                                          'stack_id', 'health_status'])
         else:
             overridden, added, skipped = api_utils.get_labels_diff(
@@ -255,6 +256,7 @@ class Cluster(base.APIBase):
         temp_id = '4a96ac4b-2447-43f1-8ca6-9fd6f36d146d'
         sample = cls(uuid='27e3153e-d5bf-4b7e-b517-fb518e17f34c',
                      name='example',
+                     project_id='37e3153e-d5bf-4b7e-b517-fb518e17f34d',
                      cluster_template_id=temp_id,
                      keypair=None,
                      node_count=2,

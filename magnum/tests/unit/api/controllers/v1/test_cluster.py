@@ -57,7 +57,8 @@ class TestClusterObject(base.TestCase):
 
 class TestListCluster(api_base.FunctionalTest):
     _cluster_attrs = ("name", "cluster_template_id", "node_count", "status",
-                      "master_count", "stack_id", "create_timeout")
+                      "project_id", "master_count", "stack_id",
+                      "create_timeout")
 
     _expand_cluster_attrs = ("name", "cluster_template_id", "node_count",
                              "status", "api_address", "discovery_url",
