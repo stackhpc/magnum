@@ -106,6 +106,7 @@ Response
   - cluster_template_id: clustertemplate_id
   - node_count: node_count
   - create_timeout: create_timeout
+  - project_id: project_id
   - name: name
 
 Response Example
@@ -166,6 +167,7 @@ Response
   - create_timeout: create_timeout
   - floating_ip_enabled: floating_ip_enabled_cluster
   - master_lb_enabled: master_lb_enabled_cluster
+  - project_id: project_id
   - name: name
 
 Response Example

@@ -48,6 +48,7 @@ Request
   - volume_driver: volume_driver
   - registry_enabled: registry_enabled
   - docker_storage_driver: docker_storage_driver
+  - project_id: project_id
   - name: name
   - network_driver: network_driver
   - fixed_network: fixed_network
@@ -93,6 +94,7 @@ Response
   - registry_enabled: registry_enabled
   - docker_storage_driver: docker_storage_driver
   - apiserver_port: apiserver_port
+  - project_id: project_id
   - name: name
   - created_at: created_at
   - network_driver: network_driver
@@ -158,6 +160,7 @@ Response
   - registry_enabled: registry_enabled
   - docker_storage_driver: docker_storage_driver
   - apiserver_port: apiserver_port
+  - project_id: project_id
   - name: name
   - created_at: created_at
   - network_driver: network_driver
@@ -231,6 +234,7 @@ Response
   - registry_enabled: registry_enabled
   - docker_storage_driver: docker_storage_driver
   - apiserver_port: apiserver_port
+  - project_id: project_id
   - name: name
   - created_at: created_at
   - network_driver: network_driver
