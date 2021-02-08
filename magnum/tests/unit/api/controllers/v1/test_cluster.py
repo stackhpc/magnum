@@ -57,6 +57,7 @@ class TestClusterObject(base.TestCase):
 
 class TestListCluster(api_base.FunctionalTest):
     _cluster_attrs = ("name", "cluster_template_id", "node_count", "status",
+                      "project_id",
                       "master_count", "stack_id", "create_timeout")
 
     _expand_cluster_attrs = ("name", "cluster_template_id", "node_count",
@@ -73,17 +74,26 @@ class TestListCluster(api_base.FunctionalTest):
         response = self.get_json('/clusters')
         self.assertEqual([], response['clusters'])
 
-    def test_one(self):
+    def _test_one(self, exclude=(), api_version="1.11"):
         cluster = obj_utils.create_test_cluster(self.context)
-        response = self.get_json('/clusters')
+        headers = {'OpenStack-API-Version': 'container-infra %s' % api_version}
+        response = self.get_json('/clusters',
+                                 headers=headers)
         self.assertEqual(cluster.uuid, response['clusters'][0]["uuid"])
-        self._verify_attrs(self._cluster_attrs, response['clusters'][0])
+        self._verify_attrs(set(self._cluster_attrs) - set(exclude),
+                           response['clusters'][0])
 
         # Verify attrs do not appear from cluster's get_all response
         none_attrs = \
             set(self._expand_cluster_attrs) - set(self._cluster_attrs)
         self._verify_attrs(none_attrs, response['clusters'][0],
                            positive=False)
+
+    def test_one(self):
+        self._test_one()
+
+    def test_one_exclude_project_id(self):
+        self._test_one(exclude=("project_id",), api_version="1.10")
 
     def test_get_one(self):
         cluster = obj_utils.create_test_cluster(self.context)

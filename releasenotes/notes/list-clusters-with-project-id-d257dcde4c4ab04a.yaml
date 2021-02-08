@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    List of clusters now includes ``project_id`` field paving the way for admin
+    users to easily identify clusters across multiple projects.
