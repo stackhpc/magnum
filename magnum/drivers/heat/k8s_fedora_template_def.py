@@ -119,7 +119,8 @@ class K8sFedoraTemplateDefinition(k8s_template_def.K8sTemplateDefinition):
                       'ostree_remote', 'ostree_commit',
                       'use_podman', 'kube_image_digest',
                       'vnic_type', 'master_vnic_type',
-                      'metrics_scraper_tag']
+                      'metrics_scraper_tag',
+                      'extra_network', 'extra_subnet']
 
         labels = self._get_relevant_labels(cluster, kwargs)
 

@@ -489,6 +489,10 @@ the table are linked to more details elsewhere in the user guide.
 +---------------------------------------+--------------------+---------------+
 | `master_vnic_type`_                   | see below          | "normal       |
 +---------------------------------------+--------------------+---------------+
+| `extra_network`_                      | see below          | ""            |
++---------------------------------------+--------------------+---------------+
+| `extra_subnet`_                       | see below          | ""            |
++---------------------------------------+--------------------+---------------+
 
 
 .. _cluster:
@@ -1655,6 +1659,17 @@ _`master_vnic_type`
   The vnic type to use for ports attached to worker nodes.
   Default: normal
 
+_`extra_network`
+  Optional additional network name or UUID to add to cluster nodes.
+  When not specified, additional networks are not added. Optionally specify
+  'extra_subnet' if you wish to use a specific subnet on the network.
+  Default: ""
+
+_`extra_subnet`
+  Optional additional subnet name or UUID to add to cluster nodes.
+  Only used when 'extra_network' is defined.
+  Default: ""
+
 External load balancer for services
 -----------------------------------
 
@@ -2737,7 +2752,6 @@ _`calico_tag`
   Stein default: v2.6.7
   Train default: v3.3.6
   Ussuri default: v3.13.1
-
 
 Besides, the Calico network driver needs kube_tag with v1.9.3 or later, because
 Calico needs extra mounts for the kubelet container. See `commit
