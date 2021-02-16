@@ -354,6 +354,31 @@ parameters:
     type: string
     description: sha256 of the target containerd tarball.
 
+  kube_service_account_key:
+    type: string
+    hidden: true
+    description: >
+      The signed cert will be used to verify the k8s service account tokens
+      during authentication.
+      NOTE: This is used for worker nodes to trigger certs rotate.
+
+  kube_service_account_private_key:
+    type: string
+    hidden: true
+    description: >
+      The private key will be used to sign generated k8s service account
+      tokens.
+
+  extra_network:
+    type: string
+    description: >
+      Additional network name to bind ports to instances
+
+  extra_subnet:
+    type: string
+    description: >
+      Additional subnet name
+
 conditions:
 
   image_based: {equals: [{get_param: boot_volume_size}, 0]}
@@ -362,6 +387,12 @@ conditions:
       equals:
       - get_param: boot_volume_size
       - 0
+
+  extra_port:
+    not:
+      equals:
+      - get_param: extra_network
+      - ''
 
 resources:
 
@@ -524,7 +555,12 @@ resources:
       user_data_format: SOFTWARE_CONFIG
       software_config_transport: POLL_SERVER_HEAT
       networks:
-        - port: {get_resource: kube_minion_eth0}
+        list_concat:
+          - - port: {get_resource: kube_minion_eth0}
+          - if:
+              - "extra_port"
+              - - port: {get_resource: kube_minion_eth1}
+              - []
       scheduler_hints: { group: { get_param: nodes_server_group_id }}
       availability_zone: {get_param: availability_zone}
 
@@ -538,7 +574,12 @@ resources:
       user_data_format: SOFTWARE_CONFIG
       software_config_transport: POLL_SERVER_HEAT
       networks:
-        - port: {get_resource: kube_minion_eth0}
+        list_concat:
+          - - port: {get_resource: kube_minion_eth0}
+          - if:
+              - "extra_port"
+              - - port: {get_resource: kube_minion_eth1}
+              - []
       scheduler_hints: { group: { get_param: nodes_server_group_id }}
       availability_zone: {get_param: availability_zone}
       block_device_mapping_v2:
@@ -557,6 +598,17 @@ resources:
         - ip_address: {get_param: pods_network_cidr}
       replacement_policy: AUTO
       binding:vnic_type: {get_param: vnic_type}
+
+  kube_minion_eth1:
+    type: OS::Neutron::Port
+    condition: extra_port
+    properties:
+      network: {get_param: extra_network}
+      security_groups:
+        - get_param: secgroup_kube_minion_id
+      fixed_ips:
+        - subnet: {get_param: extra_subnet}
+      replacement_policy: AUTO
 
   kube_minion_floating:
     type: Magnum::Optional::KubeMinion::Neutron::FloatingIP

@@ -656,6 +656,16 @@ parameters:
     description: >
       Tag of metrics-scraper for kubernetes dashboard.
 
+  extra_network:
+    type: string
+    description: >
+      Additional network name to bind ports to instances
+
+  extra_subnet:
+    type: string
+    description: >
+      Additional subnet name
+
 conditions:
 
   image_based: {equals: [{get_param: boot_volume_size}, 0]}
@@ -664,6 +674,12 @@ conditions:
       equals:
       - get_param: boot_volume_size
       - 0
+
+  extra_port:
+    not:
+      equals:
+      - get_param: extra_network
+      - ''
 
 resources:
   ######################################################################
@@ -913,7 +929,12 @@ resources:
       software_config_transport: POLL_SERVER_HEAT
       user_data: {get_resource: agent_config}
       networks:
-        - port: {get_resource: kube_master_eth0}
+        list_concat:
+          - - port: {get_resource: kube_master_eth0}
+          - if:
+              - "extra_port"
+              - - port: {get_resource: kube_master_eth1}
+              - []
       scheduler_hints: { group: { get_param: nodes_server_group_id }}
       availability_zone: {get_param: availability_zone}
 
@@ -927,7 +948,12 @@ resources:
       software_config_transport: POLL_SERVER_HEAT
       user_data: {get_resource: agent_config}
       networks:
-        - port: {get_resource: kube_master_eth0}
+        list_concat:
+          - - port: {get_resource: kube_master_eth0}
+          - if:
+              - "extra_port"
+              - - port: {get_resource: kube_master_eth1}
+              - []
       scheduler_hints: { group: { get_param: nodes_server_group_id }}
       availability_zone: {get_param: availability_zone}
       block_device_mapping_v2:
@@ -946,6 +972,17 @@ resources:
         - ip_address: {get_param: pods_network_cidr}
       replacement_policy: AUTO
       binding:vnic_type: {get_param: vnic_type}
+
+  kube_master_eth1:
+    type: OS::Neutron::Port
+    condition: extra_port
+    properties:
+      network: {get_param: extra_network}
+      security_groups:
+        - {get_param: secgroup_kube_master_id}
+      fixed_ips:
+        - subnet: {get_param: extra_subnet}
+      replacement_policy: AUTO
 
   kube_master_floating:
     type: Magnum::Optional::KubeMaster::Neutron::FloatingIP

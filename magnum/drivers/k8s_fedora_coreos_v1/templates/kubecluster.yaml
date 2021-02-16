@@ -42,6 +42,12 @@ conditions:
       data:
         calico_tag: {get_param: calico_tag}
 
+  extra_port:
+    not:
+      equals:
+      - get_param: extra_network
+      - ''
+
 parameters:
 
   # needs to become a list if we want to join master nodes?
@@ -953,6 +959,19 @@ parameters:
     description: vnic type for ports attached to master nodes
     default: "normal"
 
+  extra_network:
+    type: string
+    description: >
+      Additional network to bind nodes to
+    default: ''
+
+  extra_subnet:
+    type: string
+    description: >
+      Subnet for additional network
+    default: ''
+
+
 resources:
 
   ######################################################################
@@ -1308,6 +1327,8 @@ resources:
           containerd_tarball_sha256: {get_param: containerd_tarball_sha256}
           post_install_manifest_url: {get_param: post_install_manifest_url}
           metrics_scraper_tag: {get_param: metrics_scraper_tag}
+          extra_network: {get_param: extra_network}
+          extra_subnet: {get_param: extra_subnet}
 
   kube_cluster_config:
     condition: create_cluster_resources
@@ -1485,6 +1506,10 @@ resources:
           containerd_version: {get_param: containerd_version}
           containerd_tarball_url: {get_param: containerd_tarball_url}
           containerd_tarball_sha256: {get_param: containerd_tarball_sha256}
+          kube_service_account_key: {get_param: kube_service_account_key}
+          kube_service_account_private_key: {get_param: kube_service_account_private_key}
+          extra_network: {get_param: extra_network}
+          extra_subnet: {get_param: extra_subnet}
 
 outputs:
 
