@@ -609,6 +609,8 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'master_lb_allowed_cidrs')
         vnic_type = mock_cluster.labels.get('vnic_type')
         master_vnic_type = mock_cluster.labels.get('master_vnic_type')
+        extra_network = mock_cluster.labels.get('extra_network')
+        extra_subnet = mock_cluster.labels.get('extra_subnet')
 
         k8s_def = k8sa_tdef.AtomicK8sTemplateDefinition()
 
@@ -727,6 +729,8 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'fixed_subnet_cidr': '20.200.0.0/16',
             'vnic_type': vnic_type,
             'master_vnic_type': master_vnic_type,
+            'extra_network': extra_network,
+            'extra_subnet': extra_subnet,
         }}
         mock_get_params.assert_called_once_with(mock_context,
                                                 mock_cluster_template,
@@ -1144,6 +1148,8 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'master_lb_allowed_cidrs')
         vnic_type = mock_cluster.labels.get('vnic_type')
         master_vnic_type = mock_cluster.labels.get('master_vnic_type')
+        extra_network = mock_cluster.labels.get('extra_network')
+        extra_subnet = mock_cluster.labels.get('extra_subnet')
 
         k8s_def = k8sa_tdef.AtomicK8sTemplateDefinition()
 
@@ -1264,6 +1270,8 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'fixed_subnet_cidr': '20.200.0.0/16',
             'vnic_type': vnic_type,
             'master_vnic_type': master_vnic_type,
+            'extra_network': extra_network,
+            'extra_subnet': extra_subnet,
         }}
         mock_get_params.assert_called_once_with(mock_context,
                                                 mock_cluster_template,
