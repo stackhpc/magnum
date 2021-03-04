@@ -1,5 +1,3 @@
-#!/bin/bash
-
 set +x
 . /etc/sysconfig/heat-params
 set -x
@@ -48,21 +46,20 @@ elif [ "$NETWORK_DRIVER" = "flannel" ]; then
 fi
 
 
+KUBE_MASTER_URI="https://127.0.0.1:$KUBE_API_PORT"
 mkdir -p /srv/magnum/kubernetes/
 cat > /etc/kubernetes/config <<EOF
 KUBE_LOGTOSTDERR="--logtostderr=true"
 KUBE_LOG_LEVEL="--v=3"
-KUBE_MASTER="--master=http://127.0.0.1:8080"
 EOF
 cat > /etc/kubernetes/kubelet <<EOF
 KUBELET_ARGS="--fail-swap-on=false"
 EOF
 
 cat > /etc/kubernetes/apiserver <<EOF
-KUBE_API_ADDRESS="--insecure-bind-address=127.0.0.1"
 KUBE_ETCD_SERVERS="--etcd-servers=http://127.0.0.1:2379,http://127.0.0.1:4001"
 KUBE_SERVICE_ADDRESSES="--service-cluster-ip-range=10.254.0.0/16"
-KUBE_ADMISSION_CONTROL="--admission-control=NamespaceLifecycle,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota"
+KUBE_ADMISSION_CONTROL="--admission-control=NodeRestriction,${ADMISSION_CONTROL_LIST}"
 KUBE_API_ARGS=""
 EOF
 
@@ -97,7 +94,7 @@ ExecStart=/bin/bash -c '/usr/bin/podman run --name kube-apiserver \\
     --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \\
     \${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube:\${KUBE_TAG} \\
     kube-apiserver \\
-    \$KUBE_LOGTOSTDERR \$KUBE_LOG_LEVEL \$KUBE_ETCD_SERVERS \$KUBE_API_ADDRESS \$KUBE_API_PORT \$KUBELET_PORT \$KUBE_SERVICE_ADDRESSES \$KUBE_ADMISSION_CONTROL \$KUBE_API_ARGS'
+    \$KUBE_LOGTOSTDERR \$KUBE_LOG_LEVEL \$KUBE_ETCD_SERVERS \$KUBE_API_ADDRESS \$KUBELET_PORT \$KUBE_SERVICE_ADDRESSES \$KUBE_ADMISSION_CONTROL \$KUBE_API_ARGS'
 ExecStop=-/usr/bin/podman stop kube-apiserver
 Delegate=yes
 Restart=always
@@ -279,16 +276,16 @@ cat > /etc/kubernetes/proxy << EOF
 KUBE_PROXY_ARGS="${KUBE_PROXY_ARGS} ${KUBEPROXY_OPTIONS}"
 EOF
 
-cat > ${PROXY_KUBECONFIG} << EOF
+cat << EOF >> ${PROXY_KUBECONFIG}
 apiVersion: v1
 clusters:
 - cluster:
     certificate-authority: ${CERT_DIR}/ca.crt
-    server: http://127.0.0.1:8080
-  name: kubernetes
+    server: ${KUBE_MASTER_URI}
+  name: ${CLUSTER_UUID}
 contexts:
 - context:
-    cluster: kubernetes
+    cluster: ${CLUSTER_UUID}
     user: kube-proxy
   name: default
 current-context: default
@@ -298,38 +295,35 @@ users:
 - name: kube-proxy
   user:
     as-user-extra: {}
+    client-certificate: ${CERT_DIR}/proxy.crt
+    client-key: ${CERT_DIR}/proxy.key
 EOF
 
 sed -i '
     /^KUBE_ALLOW_PRIV=/ s/=.*/="--allow-privileged='"$KUBE_ALLOW_PRIV"'"/
-    /^KUBE_MASTER=/ s|=.*|="--master=http://127.0.0.1:8080"|
 ' /etc/kubernetes/config
 
 KUBE_API_ARGS="--runtime-config=api/all=true"
 KUBE_API_ARGS="$KUBE_API_ARGS --allow-privileged=$KUBE_ALLOW_PRIV"
 KUBE_API_ARGS="$KUBE_API_ARGS --kubelet-preferred-address-types=InternalIP,Hostname,ExternalIP"
 KUBE_API_ARGS="$KUBE_API_ARGS $KUBEAPI_OPTIONS"
-if [ "$TLS_DISABLED" == "True" ]; then
-    KUBE_API_ADDRESS="--insecure-bind-address=0.0.0.0 --insecure-port=$KUBE_API_PORT"
-else
-    KUBE_API_ADDRESS="--bind-address=0.0.0.0 --secure-port=$KUBE_API_PORT"
-    # insecure port is used internaly
-    KUBE_API_ADDRESS="$KUBE_API_ADDRESS --insecure-bind-address=127.0.0.1 --insecure-port=8080"
-    KUBE_API_ARGS="$KUBE_API_ARGS --authorization-mode=Node,RBAC --tls-cert-file=$CERT_DIR/server.crt"
-    KUBE_API_ARGS="$KUBE_API_ARGS --tls-private-key-file=$CERT_DIR/server.key"
-    KUBE_API_ARGS="$KUBE_API_ARGS --client-ca-file=$CERT_DIR/ca.crt"
-    KUBE_API_ARGS="$KUBE_API_ARGS --service-account-key-file=${CERT_DIR}/service_account.key"
-    KUBE_API_ARGS="$KUBE_API_ARGS --kubelet-certificate-authority=${CERT_DIR}/ca.crt --kubelet-client-certificate=${CERT_DIR}/server.crt --kubelet-client-key=${CERT_DIR}/server.key --kubelet-https=true"
-    # Allow for metrics-server/aggregator communication
-    KUBE_API_ARGS="${KUBE_API_ARGS} \
-        --proxy-client-cert-file=${CERT_DIR}/server.crt \
-        --proxy-client-key-file=${CERT_DIR}/server.key \
-        --requestheader-allowed-names=front-proxy-client,kube,kubernetes \
-        --requestheader-client-ca-file=${CERT_DIR}/ca.crt \
-        --requestheader-extra-headers-prefix=X-Remote-Extra- \
-        --requestheader-group-headers=X-Remote-Group \
-        --requestheader-username-headers=X-Remote-User"
-fi
+KUBE_API_ADDRESS="--bind-address=0.0.0.0 --secure-port=$KUBE_API_PORT"
+KUBE_API_ARGS="$KUBE_API_ARGS --authorization-mode=Node,RBAC --tls-cert-file=$CERT_DIR/server.crt"
+KUBE_API_ARGS="$KUBE_API_ARGS --tls-private-key-file=$CERT_DIR/server.key"
+KUBE_API_ARGS="$KUBE_API_ARGS --client-ca-file=$CERT_DIR/ca.crt"
+KUBE_API_ARGS="$KUBE_API_ARGS --service-account-key-file=${CERT_DIR}/service_account.key"
+KUBE_API_ARGS="$KUBE_API_ARGS --service-account-signing-key-file=${CERT_DIR}/service_account_private.key"
+KUBE_API_ARGS="$KUBE_API_ARGS --service-account-issuer=https://kubernetes.default.svc.cluster.local"
+KUBE_API_ARGS="$KUBE_API_ARGS --kubelet-certificate-authority=${CERT_DIR}/ca.crt --kubelet-client-certificate=${CERT_DIR}/server.crt --kubelet-client-key=${CERT_DIR}/server.key --kubelet-https=true"
+# Allow for metrics-server/aggregator communication
+KUBE_API_ARGS="${KUBE_API_ARGS} \
+    --proxy-client-cert-file=${CERT_DIR}/server.crt \
+    --proxy-client-key-file=${CERT_DIR}/server.key \
+    --requestheader-allowed-names=front-proxy-client,kube,kubernetes \
+    --requestheader-client-ca-file=${CERT_DIR}/ca.crt \
+    --requestheader-extra-headers-prefix=X-Remote-Extra- \
+    --requestheader-group-headers=X-Remote-Group \
+    --requestheader-username-headers=X-Remote-User"
 
 KUBE_ADMISSION_CONTROL=""
 if [ -n "${ADMISSION_CONTROL_LIST}" ] && [ "${TLS_DISABLED}" == "False" ]; then
@@ -385,7 +379,7 @@ apiVersion: v1
 clusters:
 - cluster:
     certificate-authority: ${CERT_DIR}/ca.crt
-    server: https://127.0.0.1:$KUBE_API_PORT
+    server: ${KUBE_MASTER_URI}
   name: ${CLUSTER_UUID}
 contexts:
 - context:
@@ -405,9 +399,10 @@ EOF
 echo "export KUBECONFIG=${ADMIN_KUBECONFIG}" >> /etc/bashrc
 chown root:root ${ADMIN_KUBECONFIG}
 chmod 600 ${ADMIN_KUBECONFIG}
+export KUBECONFIG=${ADMIN_KUBECONFIG}
 
 # Add controller manager args
-KUBE_CONTROLLER_MANAGER_ARGS="--leader-elect=true"
+KUBE_CONTROLLER_MANAGER_ARGS="--leader-elect=true --kubeconfig=/etc/kubernetes/admin.conf"
 KUBE_CONTROLLER_MANAGER_ARGS="$KUBE_CONTROLLER_MANAGER_ARGS --cluster-name=${CLUSTER_UUID}"
 KUBE_CONTROLLER_MANAGER_ARGS="${KUBE_CONTROLLER_MANAGER_ARGS} --allocate-node-cidrs=true"
 KUBE_CONTROLLER_MANAGER_ARGS="${KUBE_CONTROLLER_MANAGER_ARGS} --cluster-cidr=${PODS_NETWORK_CIDR}"
@@ -433,7 +428,7 @@ sed -i '
     /^KUBE_CONTROLLER_MANAGER_ARGS=/ s#\(KUBE_CONTROLLER_MANAGER_ARGS\).*#\1="'"${KUBE_CONTROLLER_MANAGER_ARGS}"'"#
 ' /etc/kubernetes/controller-manager
 
-sed -i '/^KUBE_SCHEDULER_ARGS=/ s/=.*/="--leader-elect=true"/' /etc/kubernetes/scheduler
+sed -i '/^KUBE_SCHEDULER_ARGS=/ s#=.*#="--leader-elect=true --kubeconfig=/etc/kubernetes/admin.conf"#' /etc/kubernetes/scheduler
 
 $ssh_cmd mkdir -p /etc/kubernetes/manifests
 KUBELET_ARGS="--register-node=true --pod-manifest-path=/etc/kubernetes/manifests --hostname-override=${INSTANCE_NAME}"
@@ -451,11 +446,11 @@ if [ -f /etc/sysconfig/docker ] ; then
     sed -i 's/\-\-log\-driver\=journald//g' /etc/sysconfig/docker
     # json-file is required for conformance.
     # https://docs.docker.com/config/containers/logging/json-file/
-    sed -i -E 's/^OPTIONS=("|'"'"')/OPTIONS=\1--log-driver=json-file --log-opt max-size=10m --log-opt max-file=5 /' /etc/sysconfig/docker
-
+    DOCKER_OPTIONS="--log-driver=json-file --log-opt max-size=10m --log-opt max-file=5"
     if [ -n "${INSECURE_REGISTRY_URL}" ]; then
-        echo "INSECURE_REGISTRY='--insecure-registry ${INSECURE_REGISTRY_URL}'" >> /etc/sysconfig/docker
+        DOCKER_OPTIONS="${DOCKER_OPTIONS} --insecure-registry ${INSECURE_REGISTRY_URL}"
     fi
+    sed -i -E 's/^OPTIONS=("|'"'"')/OPTIONS=\1'"${DOCKER_OPTIONS}"' /' /etc/sysconfig/docker
 fi
 
 KUBELET_ARGS="${KUBELET_ARGS} --network-plugin=cni --cni-conf-dir=/etc/cni/net.d --cni-bin-dir=/opt/cni/bin"
@@ -469,11 +464,11 @@ apiVersion: v1
 clusters:
 - cluster:
     certificate-authority: ${CERT_DIR}/ca.crt
-    server: http://127.0.0.1:8080
-  name: kubernetes
+    server: ${KUBE_MASTER_URI}
+  name: ${CLUSTER_UUID}
 contexts:
 - context:
-    cluster: kubernetes
+    cluster: ${CLUSTER_UUID}
     user: system:node:${INSTANCE_NAME}
   name: default
 current-context: default
@@ -483,8 +478,8 @@ users:
 - name: system:node:${INSTANCE_NAME}
   user:
     as-user-extra: {}
-    client-certificate: ${CERT_DIR}/server.crt
-    client-key: ${CERT_DIR}/server.key
+    client-certificate: ${CERT_DIR}/kubelet.crt
+    client-key: ${CERT_DIR}/kubelet.key
 EOF
 
 cat > /etc/kubernetes/get_require_kubeconfig.sh << EOF

@@ -387,6 +387,14 @@ resources:
                   __HTTPS_PROXY__: {get_param: https_proxy}
                   __NO_PROXY__: {get_param: no_proxy}
                   __SELINUX_MODE__: {get_param: selinux_mode}
+                  __INSECURE_REGISTRY_URL__: {get_param: insecure_registry_url}
+                  __REGISTRIES_CONF__:
+                    if:
+                      - equals:
+                        - get_param: insecure_registry_url
+                        - ""
+                      - ".registries.conf"
+                      - "registries.conf"
 
   ######################################################################
   #
@@ -402,6 +410,7 @@ resources:
         list_join:
           - "\n"
           -
+            - "#!/bin/bash"
             - str_replace:
                 template: {get_file: ../../common/templates/kubernetes/fragments/write-heat-params.sh}
                 params:
@@ -464,7 +473,6 @@ resources:
                   $CONTAINERD_TARBALL_SHA256: {get_param: containerd_tarball_sha256}
             - get_file: ../../common/templates/kubernetes/fragments/install-cri.sh
             - get_file: ../../common/templates/kubernetes/fragments/install-clients.sh
-            - get_file: ../../common/templates/kubernetes/fragments/write-kube-os-config.sh
             - get_file: ../../common/templates/kubernetes/fragments/make-cert-client.sh
             - get_file: ../../common/templates/fragments/configure-docker-registry.sh
             - get_file: ../../common/templates/kubernetes/fragments/configure-kubernetes-minion.sh
@@ -532,7 +540,6 @@ resources:
       block_device_mapping_v2:
         - boot_index: 0
           volume_id: {get_resource: kube_node_volume}
-          delete_on_termination: true
 
   kube_minion_eth0:
     type: OS::Neutron::Port
@@ -582,7 +589,11 @@ resources:
       - name: ostree_remote_input
       - name: ostree_commit_input
       config:
-        get_file: ../../common/templates/kubernetes/fragments/upgrade-kubernetes.sh
+        list_join:
+          - "\n"
+          -
+            - "#!/bin/bash"
+            - get_file: ../../common/templates/kubernetes/fragments/upgrade-kubernetes.sh
 
   upgrade_kubernetes_deployment:
     type: OS::Heat::SoftwareDeployment

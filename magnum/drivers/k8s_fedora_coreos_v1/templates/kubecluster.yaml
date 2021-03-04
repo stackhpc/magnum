@@ -222,7 +222,7 @@ parameters:
     type: string
     description: >
       List of admission control plugins to activate
-    default: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
+    default: "PodSecurityPolicy,NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota,TaintNodesByCondition,Priority,DefaultTolerationSeconds,DefaultStorageClass,StorageObjectInUseProtection,PersistentVolumeClaimResize,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,RuntimeClass"
 
   kube_allow_priv:
     type: string
@@ -1307,6 +1307,8 @@ resources:
         list_join:
           - "\n"
           -
+            - "#!/bin/bash"
+            - "source /etc/bashrc"
             - get_file: ../../common/templates/kubernetes/fragments/kube-apiserver-to-kubelet-role.sh
             - get_file: ../../common/templates/kubernetes/fragments/core-dns-service.sh
             - if:
@@ -1338,7 +1340,7 @@ resources:
                 template: {get_file: ../../common/templates/kubernetes/helm/prometheus-operator.sh}
                 params:
                   "${GRAFANA_ADMIN_PASSWD}": {get_param: grafana_admin_passwd}
-                  "${KUBE_MASTERS_PRIVATE}": {get_attr: [kube_masters, kube_master_external_ip]}
+                  "${KUBE_MASTERS_PRIVATE}": {get_attr: [kube_masters, kube_master_ip]}
             - get_file: ../../common/templates/kubernetes/helm/prometheus-adapter.sh
             - get_file: ../../common/templates/kubernetes/helm/ingress-nginx.sh
             - get_file: ../../common/templates/kubernetes/fragments/install-helm-modules.sh

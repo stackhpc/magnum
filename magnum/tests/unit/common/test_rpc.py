@@ -26,76 +26,32 @@ from magnum.tests import base
 
 class TestRpc(base.TestCase):
     @mock.patch.object(rpc, 'profiler', None)
-    @mock.patch.object(rpc, 'RequestContextSerializer')
     @mock.patch.object(messaging, 'RPCClient')
-    def test_get_client(self, mock_client, mock_ser):
+    def test_get_client(self, mock_client):
         rpc.TRANSPORT = mock.Mock()
         tgt = mock.Mock()
         ser = mock.Mock()
         mock_client.return_value = 'client'
-        mock_ser.return_value = ser
 
-        client = rpc.get_client(tgt, version_cap='1.0', serializer='foo',
+        client = rpc.get_client(tgt, version_cap='1.0', serializer=ser,
                                 timeout=6969)
 
-        mock_ser.assert_called_once_with('foo')
-        mock_client.assert_called_once_with(rpc.TRANSPORT,
-                                            tgt, version_cap='1.0',
-                                            serializer=ser, timeout=6969)
-        self.assertEqual('client', client)
-
-    @mock.patch.object(rpc, 'profiler', mock.Mock())
-    @mock.patch.object(rpc, 'ProfilerRequestContextSerializer')
-    @mock.patch.object(messaging, 'RPCClient')
-    def test_get_client_profiler_enabled(self, mock_client, mock_ser):
-        rpc.TRANSPORT = mock.Mock()
-        tgt = mock.Mock()
-        ser = mock.Mock()
-        mock_client.return_value = 'client'
-        mock_ser.return_value = ser
-
-        client = rpc.get_client(tgt, version_cap='1.0', serializer='foo',
-                                timeout=6969)
-
-        mock_ser.assert_called_once_with('foo')
         mock_client.assert_called_once_with(rpc.TRANSPORT,
                                             tgt, version_cap='1.0',
                                             serializer=ser, timeout=6969)
         self.assertEqual('client', client)
 
     @mock.patch.object(rpc, 'profiler', None)
-    @mock.patch.object(rpc, 'RequestContextSerializer')
     @mock.patch.object(messaging, 'get_rpc_server')
-    def test_get_server(self, mock_get, mock_ser):
+    def test_get_server(self, mock_get):
         rpc.TRANSPORT = mock.Mock()
         ser = mock.Mock()
         tgt = mock.Mock()
         ends = mock.Mock()
-        mock_ser.return_value = ser
         mock_get.return_value = 'server'
         access_policy = dispatcher.DefaultRPCAccessPolicy
-        server = rpc.get_server(tgt, ends, serializer='foo')
+        server = rpc.get_server(tgt, ends, serializer=ser)
 
-        mock_ser.assert_called_once_with('foo')
-        mock_get.assert_called_once_with(rpc.TRANSPORT, tgt, ends,
-                                         executor='eventlet', serializer=ser,
-                                         access_policy=access_policy)
-        self.assertEqual('server', server)
-
-    @mock.patch.object(rpc, 'profiler', mock.Mock())
-    @mock.patch.object(rpc, 'ProfilerRequestContextSerializer')
-    @mock.patch.object(messaging, 'get_rpc_server')
-    def test_get_server_profiler_enabled(self, mock_get, mock_ser):
-        rpc.TRANSPORT = mock.Mock()
-        ser = mock.Mock()
-        tgt = mock.Mock()
-        ends = mock.Mock()
-        mock_ser.return_value = ser
-        mock_get.return_value = 'server'
-        access_policy = dispatcher.DefaultRPCAccessPolicy
-        server = rpc.get_server(tgt, ends, serializer='foo')
-
-        mock_ser.assert_called_once_with('foo')
         mock_get.assert_called_once_with(rpc.TRANSPORT, tgt, ends,
                                          executor='eventlet', serializer=ser,
                                          access_policy=access_policy)

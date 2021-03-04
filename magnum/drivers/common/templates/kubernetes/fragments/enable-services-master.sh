@@ -1,5 +1,3 @@
-#!/bin/sh
-
 . /etc/sysconfig/heat-params
 
 ssh_cmd="ssh -F /srv/magnum/.ssh/config root@localhost"
@@ -29,7 +27,7 @@ for action in enable restart; do
 done
 
 # Label self as master
-until  [ "ok" = "$(curl --silent http://127.0.0.1:8080/healthz)" ] && \
+until  [ "ok" = "$(kubectl get --raw='/healthz')" ] && \
     kubectl patch node ${INSTANCE_NAME} \
         --patch '{"metadata": {"labels": {"node-role.kubernetes.io/master": ""}}}'
 do

@@ -1,5 +1,3 @@
-#!/bin/bash
-
 set +x
 . /etc/sysconfig/heat-params
 set -ex
@@ -15,7 +13,7 @@ if [ "$(echo ${INGRESS_CONTROLLER} | tr '[:upper:]' '[:lower:]')" = "nginx" ]; t
     cat << EOF >> ${HELM_CHART_DIR}/requirements.yaml
 - name: ${CHART_NAME}
   version: ${NGINX_INGRESS_CONTROLLER_CHART_TAG}
-  repository: https://kubernetes-charts.storage.googleapis.com/
+  repository: https://charts.helm.sh/stable
 EOF
 
     cat << EOF >> ${HELM_CHART_DIR}/values.yaml
