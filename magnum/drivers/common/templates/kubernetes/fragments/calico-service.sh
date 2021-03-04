@@ -1,4 +1,3 @@
-#!/bin/sh
 step="calico-service"
 printf "Starting to run ${step}\n"
 
@@ -460,10 +459,10 @@ spec:
                   key: veth_mtu
             # The default IPv4 pool to create on startup if none exists. Pod IPs will be
             # chosen from this range. Changing this value after installation will have
-            # no effect. This should fall within `--cluster-cidr`.
+            # no effect. This should fall within '--cluster-cidr'.
             - name: CALICO_IPV4POOL_CIDR
               value: ${CALICO_IPV4POOL}
-            # Disable file logging so `kubectl logs` works.
+            # Disable file logging so 'kubectl logs' works.
             - name: CALICO_DISABLE_FILE_LOGGING
               value: "true"
             # Set Felix endpoint to host default action to ACCEPT.
@@ -838,7 +837,7 @@ EOF
 
 set -x
 
-    until  [ "ok" = "$(curl --silent http://127.0.0.1:8080/healthz)" ]
+    until  [ "ok" = "$(kubectl get --raw='/healthz')" ]
     do
         echo "Waiting for Kubernetes API..."
         sleep 5
