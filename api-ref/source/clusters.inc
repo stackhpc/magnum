@@ -105,6 +105,7 @@ Response
   - cluster_template_id: clustertemplate_id
   - node_count: node_count
   - create_timeout: create_timeout
+  - project_id: project_id
   - name: name
 
 Response Example
@@ -163,6 +164,7 @@ Response
   - node_addresses: node_addresses
   - status_reason: status_reason
   - create_timeout: create_timeout
+  - project_id: project_id
   - name: name
 
 Response Example
