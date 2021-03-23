@@ -1,5 +1,0 @@
----
-features:
-  - |
-    Support extra_network and extra_subnet labels to allow users to assign
-    extra network interface to cluster nodes, e.g. storage network.
