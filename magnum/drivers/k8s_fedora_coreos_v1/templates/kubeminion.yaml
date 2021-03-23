@@ -607,7 +607,12 @@ resources:
       security_groups:
         - get_param: secgroup_kube_minion_id
       fixed_ips:
-        - subnet: {get_param: extra_subnet}
+        if:
+          - equals:
+              - get_param: extra_subnet
+              - ''
+          - []
+          - - subnet: {get_param: extra_subnet}
       replacement_policy: AUTO
 
   kube_minion_floating:
