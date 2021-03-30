@@ -42,12 +42,6 @@ conditions:
       data:
         calico_tag: {get_param: calico_tag}
 
-  extra_port:
-    not:
-      equals:
-      - get_param: extra_network
-      - ''
-
 parameters:
 
   # needs to become a list if we want to join master nodes?
@@ -579,7 +573,7 @@ parameters:
   calico_tag:
     type: string
     description: tag of the calico containers used to provision the calico node
-    default: v3.13.1
+    default: v3.18.0
 
   calico_kube_controllers_tag:
     type: string
@@ -924,8 +918,8 @@ parameters:
 
   containerd_version:
     type: string
-    description: The containerd version to download from https://storage.googleapis.com/cri-containerd-release/
-    default: '1.2.8'
+    description: The containerd version to download from https://github.com/containerd/containerd/releases
+    default: '1.4.4'
 
   containerd_tarball_url:
     type: string
@@ -935,7 +929,7 @@ parameters:
   containerd_tarball_sha256:
     type: string
     description: sha256 of the target containerd tarball.
-    default: '1f2f0fb928179df90492a83c326a194b8e9d992538498efb44cbb6ef15465627'
+    default: '96641849cb78a0a119223a427dfdc1ade88412ef791a14193212c8c8e29d447b'
 
   post_install_manifest_url:
     type: string
@@ -1228,6 +1222,7 @@ resources:
           fixed_network: {get_attr: [network, fixed_network]}
           fixed_network_name: {get_param: fixed_network_name}
           fixed_subnet: {get_attr: [network, fixed_subnet]}
+          fixed_subnet_cidr: {get_param: fixed_subnet_cidr}
           api_pool_id: {get_attr: [api_lb, pool_id]}
           etcd_pool_id: {get_attr: [etcd_lb, pool_id]}
           username: {get_param: username}
@@ -1506,8 +1501,6 @@ resources:
           containerd_version: {get_param: containerd_version}
           containerd_tarball_url: {get_param: containerd_tarball_url}
           containerd_tarball_sha256: {get_param: containerd_tarball_sha256}
-          kube_service_account_key: {get_param: kube_service_account_key}
-          kube_service_account_private_key: {get_param: kube_service_account_private_key}
           extra_network: {get_param: extra_network}
           extra_subnet: {get_param: extra_subnet}
 

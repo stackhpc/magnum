@@ -220,6 +220,10 @@ parameters:
     type: string
     description: Subnet from which to allocate fixed addresses.
 
+  fixed_subnet_cidr:
+    type: string
+    description: network range for fixed ip network
+
   network_driver:
     type: string
     description: network driver to use for instantiating container networks
@@ -675,10 +679,16 @@ conditions:
       - get_param: boot_volume_size
       - 0
 
-  extra_port:
+  extra_network_defined:
     not:
       equals:
       - get_param: extra_network
+      - ''
+
+  extra_subnet_defined:
+    not:
+      equals:
+      - get_param: extra_subnet
       - ''
 
 resources:
@@ -782,6 +792,7 @@ resources:
                   "$CLUSTER_NETWORK": {get_param: fixed_network}
                   "$CLUSTER_NETWORK_NAME": {get_param: fixed_network_name}
                   "$CLUSTER_SUBNET": {get_param: fixed_subnet}
+                  "$CLUSTER_SUBNET_CIDR": {get_param: fixed_subnet_cidr}
                   "$TLS_DISABLED": {get_param: tls_disabled}
                   "$TRAEFIK_INGRESS_CONTROLLER_TAG": {get_param: traefik_ingress_controller_tag}
                   "$KUBE_DASHBOARD_ENABLED": {get_param: kube_dashboard_enabled}
@@ -932,7 +943,7 @@ resources:
         list_concat:
           - - port: {get_resource: kube_master_eth0}
           - if:
-              - "extra_port"
+              - "extra_network_defined"
               - - port: {get_resource: kube_master_eth1}
               - []
       scheduler_hints: { group: { get_param: nodes_server_group_id }}
@@ -951,7 +962,7 @@ resources:
         list_concat:
           - - port: {get_resource: kube_master_eth0}
           - if:
-              - "extra_port"
+              - "extra_network_defined"
               - - port: {get_resource: kube_master_eth1}
               - []
       scheduler_hints: { group: { get_param: nodes_server_group_id }}
@@ -975,13 +986,16 @@ resources:
 
   kube_master_eth1:
     type: OS::Neutron::Port
-    condition: extra_port
+    condition: extra_network_defined
     properties:
       network: {get_param: extra_network}
       security_groups:
         - {get_param: secgroup_kube_master_id}
       fixed_ips:
-        - subnet: {get_param: extra_subnet}
+        if:
+          - "extra_subnet_defined"
+          - - subnet: {get_param: extra_subnet}
+          - []
       replacement_policy: AUTO
 
   kube_master_floating:

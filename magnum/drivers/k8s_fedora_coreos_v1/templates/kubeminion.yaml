@@ -354,21 +354,6 @@ parameters:
     type: string
     description: sha256 of the target containerd tarball.
 
-  kube_service_account_key:
-    type: string
-    hidden: true
-    description: >
-      The signed cert will be used to verify the k8s service account tokens
-      during authentication.
-      NOTE: This is used for worker nodes to trigger certs rotate.
-
-  kube_service_account_private_key:
-    type: string
-    hidden: true
-    description: >
-      The private key will be used to sign generated k8s service account
-      tokens.
-
   extra_network:
     type: string
     description: >
@@ -388,10 +373,16 @@ conditions:
       - get_param: boot_volume_size
       - 0
 
-  extra_port:
+  extra_network_defined:
     not:
       equals:
       - get_param: extra_network
+      - ''
+
+  extra_subnet_defined:
+    not:
+      equals:
+      - get_param: extra_subnet
       - ''
 
 resources:
@@ -558,7 +549,7 @@ resources:
         list_concat:
           - - port: {get_resource: kube_minion_eth0}
           - if:
-              - "extra_port"
+              - "extra_network_defined"
               - - port: {get_resource: kube_minion_eth1}
               - []
       scheduler_hints: { group: { get_param: nodes_server_group_id }}
@@ -577,7 +568,7 @@ resources:
         list_concat:
           - - port: {get_resource: kube_minion_eth0}
           - if:
-              - "extra_port"
+              - "extra_network_defined"
               - - port: {get_resource: kube_minion_eth1}
               - []
       scheduler_hints: { group: { get_param: nodes_server_group_id }}
@@ -601,13 +592,16 @@ resources:
 
   kube_minion_eth1:
     type: OS::Neutron::Port
-    condition: extra_port
+    condition: extra_network_defined
     properties:
       network: {get_param: extra_network}
       security_groups:
         - get_param: secgroup_kube_minion_id
       fixed_ips:
-        - subnet: {get_param: extra_subnet}
+        if:
+          - "extra_subnet_defined"
+          - - subnet: {get_param: extra_subnet}
+          - []
       replacement_policy: AUTO
 
   kube_minion_floating:

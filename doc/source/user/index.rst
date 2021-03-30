@@ -494,6 +494,7 @@ the table are linked to more details elsewhere in the user guide.
 | `extra_subnet`_                       | see below          | ""            |
 +---------------------------------------+--------------------+---------------+
 
+
 .. _cluster:
 
 Cluster
@@ -1627,13 +1628,15 @@ _`containerd_version`
   The containerd version to use as released in
   https://github.com/containerd/containerd/releases and
   https://storage.googleapis.com/cri-containerd-release/
+  Victoria default: 1.4.4
+  Ussuri default: 1.2.8
 
 _`containerd_tarball_url`
   Url with the tarball of containerd's binaries.
 
 _`containerd_tarball_sha256`
   sha256 of the tarball fetched with containerd_tarball_url or from
-  https://storage.googleapis.com/cri-containerd-release/.
+  https://github.com/containerd/containerd/releases.
 
 _`kube_dashboard_version`
   Default version of Kubernetes dashboard.
@@ -1659,10 +1662,15 @@ _`master_vnic_type`
   Default: normal
 
 _`extra_network`
-  Optional additional network to add to cluster nodes.
+  Optional additional network name or UUID to add to cluster nodes.
+  When not specified, additional networks are not added. Optionally specify
+  'extra_subnet' if you wish to use a specific subnet on the network.
+  Default: ""
 
 _`extra_subnet`
-  Optional additional subnet to add to cluster nodes.
+  Optional additional subnet name or UUID to add to cluster nodes.
+  Only used when 'extra_network' is defined.
+  Default: ""
 
 External load balancer for services
 -----------------------------------
@@ -2746,6 +2754,8 @@ _`calico_tag`
   Stein default: v2.6.7
   Train default: v3.3.6
   Ussuri default: v3.13.1
+  Victoria default: v3.13.1
+  Wallaby default: v3.18.0
 
 Besides, the Calico network driver needs kube_tag with v1.9.3 or later, because
 Calico needs extra mounts for the kubelet container. See `commit
