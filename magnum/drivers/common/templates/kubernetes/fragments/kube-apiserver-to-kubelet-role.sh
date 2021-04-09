@@ -150,7 +150,7 @@ kubectl -n kube-system create secret generic os-trustee \
 
 #TODO: add heat variables for master count to determine leaderelect true/False ?
 if [ "$(echo "${CLOUD_PROVIDER_ENABLED}" | tr '[:upper:]' '[:lower:]')" = "true" ]; then
-    occm_image="${CONTAINER_INFRA_PREFIX:-docker.io/k8scloudprovider/}openstack-cloud-controller-manager:${CLOUD_PROVIDER_TAG}"
+    occm_image="${CONTAINER_INFRA_PREFIX:-docker.io/stackhpc/}openstack-cloud-controller-manager:${CLOUD_PROVIDER_TAG}"
     OCCM=/srv/magnum/kubernetes/openstack-cloud-controller-manager.yaml
 
     [ -f ${OCCM} ] || {
