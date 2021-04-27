@@ -230,6 +230,7 @@ class Cluster(base.APIBase):
                                          'labels', 'node_count', 'status',
                                          'master_flavor_id', 'flavor_id',
                                          'create_timeout', 'master_count',
+                                         'project_id',
                                          'stack_id', 'health_status'])
         else:
             overridden, added, skipped = api_utils.get_labels_diff(
@@ -257,6 +258,7 @@ class Cluster(base.APIBase):
         temp_id = '4a96ac4b-2447-43f1-8ca6-9fd6f36d146d'
         sample = cls(uuid='27e3153e-d5bf-4b7e-b517-fb518e17f34c',
                      name='example',
+                     project_id='37e3153e-d5bf-4b7e-b517-fb518e17f34d',
                      cluster_template_id=temp_id,
                      keypair=None,
                      node_count=2,
@@ -388,10 +390,22 @@ class ClustersController(base.Controller):
 
     nodegroups = nodegroup.NodeGroupController()
 
+    @base.Controller.api_version("1.1", "1.10")
     @expose.expose(ClusterCollection, types.uuid, int, wtypes.text,
                    wtypes.text)
-    def get_all(self, marker=None, limit=None, sort_key='id',
-                sort_dir='asc'):
+    def get_all(self, marker=None, limit=None, sort_key='id', sort_dir='asc'):
+        collection = self._get_all(marker, limit, sort_key, sort_dir)
+        for c in collection.clusters:
+            setattr(c, "project_id", wsme.Unset)
+        return collection
+
+    @base.Controller.api_version("1.11")  # noqa
+    @expose.expose(ClusterCollection, types.uuid, int, wtypes.text,
+                   wtypes.text)
+    def get_all(self, marker=None, limit=None, sort_key='id', sort_dir='asc'):
+        return self._get_all(marker, limit, sort_key, sort_dir)
+
+    def _get_all(self, marker, limit, sort_key, sort_dir):
         """Retrieve a list of clusters.
 
         :param marker: pagination marker for large data sets.

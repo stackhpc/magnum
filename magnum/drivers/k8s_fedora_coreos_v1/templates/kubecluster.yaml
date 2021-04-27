@@ -573,7 +573,7 @@ parameters:
   calico_tag:
     type: string
     description: tag of the calico containers used to provision the calico node
-    default: v3.13.1
+    default: v3.18.0
 
   calico_kube_controllers_tag:
     type: string
@@ -943,6 +943,29 @@ parameters:
     description: The allowed CIDR list for master load balancer
     default: []
 
+  vnic_type:
+    type: string
+    description: vnic type for ports attached to worker nodes
+    default: "normal"
+
+  master_vnic_type:
+    type: string
+    description: vnic type for ports attached to master nodes
+    default: "normal"
+
+  extra_network:
+    type: string
+    description: >
+      Additional network to bind nodes to
+    default: ''
+
+  extra_subnet:
+    type: string
+    description: >
+      Subnet for additional network
+    default: ''
+
+
 resources:
 
   ######################################################################
@@ -1193,11 +1216,13 @@ resources:
           cluster_uuid: {get_param: cluster_uuid}
           magnum_url: {get_param: magnum_url}
           traefik_ingress_controller_tag: {get_param: traefik_ingress_controller_tag}
+          vnic_type: {get_param: master_vnic_type}
           volume_driver: {get_param: volume_driver}
           region_name: {get_param: region_name}
           fixed_network: {get_attr: [network, fixed_network]}
           fixed_network_name: {get_param: fixed_network_name}
           fixed_subnet: {get_attr: [network, fixed_subnet]}
+          fixed_subnet_cidr: {get_param: fixed_subnet_cidr}
           api_pool_id: {get_attr: [api_lb, pool_id]}
           etcd_pool_id: {get_attr: [etcd_lb, pool_id]}
           username: {get_param: username}
@@ -1297,6 +1322,8 @@ resources:
           containerd_tarball_sha256: {get_param: containerd_tarball_sha256}
           post_install_manifest_url: {get_param: post_install_manifest_url}
           metrics_scraper_tag: {get_param: metrics_scraper_tag}
+          extra_network: {get_param: extra_network}
+          extra_subnet: {get_param: extra_subnet}
 
   kube_cluster_config:
     condition: create_cluster_resources
@@ -1426,6 +1453,7 @@ resources:
           registry_chunksize: {get_param: registry_chunksize}
           cluster_uuid: {get_param: cluster_uuid}
           magnum_url: {get_param: magnum_url}
+          vnic_type: {get_param: vnic_type}
           volume_driver: {get_param: volume_driver}
           region_name: {get_param: region_name}
           auth_url: {get_param: auth_url}
@@ -1475,6 +1503,9 @@ resources:
           containerd_tarball_sha256: {get_param: containerd_tarball_sha256}
           kube_service_account_key: {get_param: kube_service_account_key}
           kube_service_account_private_key: {get_param: kube_service_account_private_key}
+          extra_network: {get_param: extra_network}
+          extra_subnet: {get_param: extra_subnet}
+
 outputs:
 
   api_address:

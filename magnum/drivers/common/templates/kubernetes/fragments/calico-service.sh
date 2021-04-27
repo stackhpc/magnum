@@ -74,6 +74,17 @@ rules:
       - create
       - update
       - delete
+      - watch
+  # kube-controllers manages hostendpoints.
+  - apiGroups: ["crd.projectcalico.org"]
+    resources:
+      - hostendpoints
+    verbs:
+      - get
+      - list
+      - create
+      - update
+      - delete
   # Needs access to update clusterinformations.
   - apiGroups: ["crd.projectcalico.org"]
     resources:
@@ -82,6 +93,19 @@ rules:
       - get
       - create
       - update
+  # KubeControllersConfiguration is where it gets its config
+  - apiGroups: ["crd.projectcalico.org"]
+    resources:
+      - kubecontrollersconfigurations
+    verbs:
+      # read its own config
+      - get
+      # create a default if none exists
+      - create
+      # update status
+      - update
+      # watch for changes
+      - watch
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -377,7 +401,7 @@ spec:
         # and CNI network config file on each node.
         - name: install-cni
           image: "${_prefix}cni:${CALICO_TAG}"
-          command: ["/install-cni.sh"]
+          command: ["/opt/cni/bin/install"]
           env:
             # Name of the CNI config file to create.
             - name: CNI_CONF_NAME
@@ -448,6 +472,9 @@ spec:
             # Auto-detect the BGP IP address.
             - name: IP
               value: "autodetect"
+            # Use fixed subnet CIDR to autodetect IP (supported since Calico v3.16.x)
+            - name: IP_AUTODETECTION_METHOD
+              value: "cidr=${CLUSTER_SUBNET_CIDR}"
             # Enable IPIP
             - name: CALICO_IPV4POOL_IPIP
               value: "${CALICO_IPV4POOL_IPIP}"
@@ -831,6 +858,347 @@ spec:
     plural: networksets
     singular: networkset
 
+---
+
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: hostendpoints.crd.projectcalico.org
+spec:
+  group: crd.projectcalico.org
+  names:
+    kind: HostEndpoint
+    listKind: HostEndpointList
+    plural: hostendpoints
+    singular: hostendpoint
+  scope: Cluster
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: HostEndpointSpec contains the specification for a HostEndpoint
+              resource.
+            properties:
+              expectedIPs:
+                description: "The expected IP addresses (IPv4 and IPv6) of the endpoint.
+                  If \"InterfaceName\" is not present, Calico will look for an interface
+                  matching any of the IPs in the list and apply policy to that. Note:
+                  \tWhen using the selector match criteria in an ingress or egress
+                  security Policy \tor Profile, Calico converts the selector into
+                  a set of IP addresses. For host \tendpoints, the ExpectedIPs field
+                  is used for that purpose. (If only the interface \tname is specified,
+                  Calico does not learn the IPs of the interface for use in match
+                  \tcriteria.)"
+                items:
+                  type: string
+                type: array
+              interfaceName:
+                description: "Either \"*\", or the name of a specific Linux interface
+                  to apply policy to; or empty.  \"*\" indicates that this HostEndpoint
+                  governs all traffic to, from or through the default network namespace
+                  of the host named by the \"Node\" field; entering and leaving that
+                  namespace via any interface, including those from/to non-host-networked
+                  local workloads. \n If InterfaceName is not \"*\", this HostEndpoint
+                  only governs traffic that enters or leaves the host through the
+                  specific interface named by InterfaceName, or - when InterfaceName
+                  is empty - through the specific interface that has one of the IPs
+                  in ExpectedIPs. Therefore, when InterfaceName is empty, at least
+                  one expected IP must be specified.  Only external interfaces (such
+                  as \"eth0\") are supported here; it isn't possible for a HostEndpoint
+                  to protect traffic through a specific local workload interface.
+                  \n Note: Only some kinds of policy are implemented for \"*\" HostEndpoints;
+                  initially just pre-DNAT policy.  Please check Calico documentation
+                  for the latest position."
+                type: string
+              node:
+                description: The node name identifying the Calico node instance.
+                type: string
+              ports:
+                description: Ports contains the endpoint's named ports, which may
+                  be referenced in security policy rules.
+                items:
+                  properties:
+                    name:
+                      type: string
+                    port:
+                      type: integer
+                    protocol:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      pattern: ^.*
+                      x-kubernetes-int-or-string: true
+                  required:
+                  - name
+                  - port
+                  - protocol
+                  type: object
+                type: array
+              profiles:
+                description: A list of identifiers of security Profile objects that
+                  apply to this endpoint. Each profile is applied in the order that
+                  they appear in this list.  Profile rules are applied after the selector-based
+                  security policy.
+                items:
+                  type: string
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+
+---
+
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: kubecontrollersconfigurations.crd.projectcalico.org
+spec:
+  group: crd.projectcalico.org
+  names:
+    kind: KubeControllersConfiguration
+    listKind: KubeControllersConfigurationList
+    plural: kubecontrollersconfigurations
+    singular: kubecontrollersconfiguration
+  scope: Cluster
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: KubeControllersConfigurationSpec contains the values of the
+              Kubernetes controllers configuration.
+            properties:
+              controllers:
+                description: Controllers enables and configures individual Kubernetes
+                  controllers
+                properties:
+                  namespace:
+                    description: Namespace enables and configures the namespace controller.
+                      Enabled by default, set to nil to disable.
+                    properties:
+                      reconcilerPeriod:
+                        description: 'ReconcilerPeriod is the period to perform reconciliation
+                          with the Calico datastore. [Default: 5m]'
+                        type: string
+                    type: object
+                  node:
+                    description: Node enables and configures the node controller.
+                      Enabled by default, set to nil to disable.
+                    properties:
+                      hostEndpoint:
+                        description: HostEndpoint controls syncing nodes to host endpoints.
+                          Disabled by default, set to nil to disable.
+                        properties:
+                          autoCreate:
+                            description: 'AutoCreate enables automatic creation of
+                              host endpoints for every node. [Default: Disabled]'
+                            type: string
+                        type: object
+                      reconcilerPeriod:
+                        description: 'ReconcilerPeriod is the period to perform reconciliation
+                          with the Calico datastore. [Default: 5m]'
+                        type: string
+                      syncLabels:
+                        description: 'SyncLabels controls whether to copy Kubernetes
+                          node labels to Calico nodes. [Default: Enabled]'
+                        type: string
+                    type: object
+                  policy:
+                    description: Policy enables and configures the policy controller.
+                      Enabled by default, set to nil to disable.
+                    properties:
+                      reconcilerPeriod:
+                        description: 'ReconcilerPeriod is the period to perform reconciliation
+                          with the Calico datastore. [Default: 5m]'
+                        type: string
+                    type: object
+                  serviceAccount:
+                    description: ServiceAccount enables and configures the service
+                      account controller. Enabled by default, set to nil to disable.
+                    properties:
+                      reconcilerPeriod:
+                        description: 'ReconcilerPeriod is the period to perform reconciliation
+                          with the Calico datastore. [Default: 5m]'
+                        type: string
+                    type: object
+                  workloadEndpoint:
+                    description: WorkloadEndpoint enables and configures the workload
+                      endpoint controller. Enabled by default, set to nil to disable.
+                    properties:
+                      reconcilerPeriod:
+                        description: 'ReconcilerPeriod is the period to perform reconciliation
+                          with the Calico datastore. [Default: 5m]'
+                        type: string
+                    type: object
+                type: object
+              etcdV3CompactionPeriod:
+                description: 'EtcdV3CompactionPeriod is the period between etcdv3
+                  compaction requests. Set to 0 to disable. [Default: 10m]'
+                type: string
+              healthChecks:
+                description: 'HealthChecks enables or disables support for health
+                  checks [Default: Enabled]'
+                type: string
+              logSeverityScreen:
+                description: 'LogSeverityScreen is the log severity above which logs
+                  are sent to the stdout. [Default: Info]'
+                type: string
+              prometheusMetricsPort:
+                description: 'PrometheusMetricsPort is the TCP port that the Prometheus
+                  metrics server should bind to. Set to 0 to disable. [Default: 9094]'
+                type: integer
+            required:
+            - controllers
+            type: object
+          status:
+            description: KubeControllersConfigurationStatus represents the status
+              of the configuration. It's useful for admins to be able to see the actual
+              config that was applied, which can be modified by environment variables
+              on the kube-controllers process.
+            properties:
+              environmentVars:
+                additionalProperties:
+                  type: string
+                description: EnvironmentVars contains the environment variables on
+                  the kube-controllers that influenced the RunningConfig.
+                type: object
+              runningConfig:
+                description: RunningConfig contains the effective config that is running
+                  in the kube-controllers pod, after merging the API resource with
+                  any environment variables.
+                properties:
+                  controllers:
+                    description: Controllers enables and configures individual Kubernetes
+                      controllers
+                    properties:
+                      namespace:
+                        description: Namespace enables and configures the namespace
+                          controller. Enabled by default, set to nil to disable.
+                        properties:
+                          reconcilerPeriod:
+                            description: 'ReconcilerPeriod is the period to perform
+                              reconciliation with the Calico datastore. [Default:
+                              5m]'
+                            type: string
+                        type: object
+                      node:
+                        description: Node enables and configures the node controller.
+                          Enabled by default, set to nil to disable.
+                        properties:
+                          hostEndpoint:
+                            description: HostEndpoint controls syncing nodes to host
+                              endpoints. Disabled by default, set to nil to disable.
+                            properties:
+                              autoCreate:
+                                description: 'AutoCreate enables automatic creation
+                                  of host endpoints for every node. [Default: Disabled]'
+                                type: string
+                            type: object
+                          reconcilerPeriod:
+                            description: 'ReconcilerPeriod is the period to perform
+                              reconciliation with the Calico datastore. [Default:
+                              5m]'
+                            type: string
+                          syncLabels:
+                            description: 'SyncLabels controls whether to copy Kubernetes
+                              node labels to Calico nodes. [Default: Enabled]'
+                            type: string
+                        type: object
+                      policy:
+                        description: Policy enables and configures the policy controller.
+                          Enabled by default, set to nil to disable.
+                        properties:
+                          reconcilerPeriod:
+                            description: 'ReconcilerPeriod is the period to perform
+                              reconciliation with the Calico datastore. [Default:
+                              5m]'
+                            type: string
+                        type: object
+                      serviceAccount:
+                        description: ServiceAccount enables and configures the service
+                          account controller. Enabled by default, set to nil to disable.
+                        properties:
+                          reconcilerPeriod:
+                            description: 'ReconcilerPeriod is the period to perform
+                              reconciliation with the Calico datastore. [Default:
+                              5m]'
+                            type: string
+                        type: object
+                      workloadEndpoint:
+                        description: WorkloadEndpoint enables and configures the workload
+                          endpoint controller. Enabled by default, set to nil to disable.
+                        properties:
+                          reconcilerPeriod:
+                            description: 'ReconcilerPeriod is the period to perform
+                              reconciliation with the Calico datastore. [Default:
+                              5m]'
+                            type: string
+                        type: object
+                    type: object
+                  etcdV3CompactionPeriod:
+                    description: 'EtcdV3CompactionPeriod is the period between etcdv3
+                      compaction requests. Set to 0 to disable. [Default: 10m]'
+                    type: string
+                  healthChecks:
+                    description: 'HealthChecks enables or disables support for health
+                      checks [Default: Enabled]'
+                    type: string
+                  logSeverityScreen:
+                    description: 'LogSeverityScreen is the log severity above which
+                      logs are sent to the stdout. [Default: Info]'
+                    type: string
+                  prometheusMetricsPort:
+                    description: 'PrometheusMetricsPort is the TCP port that the Prometheus
+                      metrics server should bind to. Set to 0 to disable. [Default:
+                      9094]'
+                    type: integer
+                required:
+                - controllers
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
 
 EOF
     }

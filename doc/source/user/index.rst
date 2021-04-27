@@ -485,6 +485,14 @@ the table are linked to more details elsewhere in the user guide.
 +---------------------------------------+--------------------+---------------+
 | `fixed_subnet_cidr`_                  | see below          | ""            |
 +---------------------------------------+--------------------+---------------+
+| `vnic_type`_                          | see below          | "normal"      |
++---------------------------------------+--------------------+---------------+
+| `master_vnic_type`_                   | see below          | "normal       |
++---------------------------------------+--------------------+---------------+
+| `extra_network`_                      | see below          | ""            |
++---------------------------------------+--------------------+---------------+
+| `extra_subnet`_                       | see below          | ""            |
++---------------------------------------+--------------------+---------------+
 
 .. _cluster:
 
@@ -1654,6 +1662,26 @@ _`fixed_subnet_cidr`
   specified an existing fixed_subnet during cluster creation.
   Ussuri default: 10.0.0.0/24
 
+_`vnic_type`
+  The vnic type to use for ports attached to worker nodes. This allows
+  the user to, for example, attach SR-IOV ports to instances.
+  Default: normal
+
+_`master_vnic_type`
+  The vnic type to use for ports attached to worker nodes.
+  Default: normal
+
+_`extra_network`
+  Optional additional network name or UUID to add to cluster nodes.
+  When not specified, additional networks are not added. Optionally specify
+  'extra_subnet' if you wish to use a specific subnet on the network.
+  Default: ""
+
+_`extra_subnet`
+  Optional additional subnet name or UUID to add to cluster nodes.
+  Only used when 'extra_network' is defined.
+  Default: ""
+
 External load balancer for services
 -----------------------------------
 
@@ -2739,7 +2767,8 @@ _`calico_tag`
   Stein default: v2.6.7
   Train default: v3.3.6
   Ussuri default: v3.13.1
-
+  Victoria default: v3.13.1
+  Wallaby default: v3.18.0
 
 Besides, the Calico network driver needs kube_tag with v1.9.3 or later, because
 Calico needs extra mounts for the kubelet container. See `commit

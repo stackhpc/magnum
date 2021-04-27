@@ -59,7 +59,7 @@ EOF
 cat > /etc/kubernetes/apiserver <<EOF
 KUBE_ETCD_SERVERS="--etcd-servers=http://127.0.0.1:2379,http://127.0.0.1:4001"
 KUBE_SERVICE_ADDRESSES="--service-cluster-ip-range=10.254.0.0/16"
-KUBE_ADMISSION_CONTROL="--admission-control=NamespaceLifecycle,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota"
+KUBE_ADMISSION_CONTROL="--admission-control=NodeRestriction,${ADMISSION_CONTROL_LIST}"
 KUBE_API_ARGS=""
 EOF
 
@@ -402,7 +402,7 @@ chmod 600 ${ADMIN_KUBECONFIG}
 export KUBECONFIG=${ADMIN_KUBECONFIG}
 
 # Add controller manager args
-KUBE_CONTROLLER_MANAGER_ARGS="--leader-elect=true --kubeconfig=/etc/kubernetes/admin.conf --use-service-account-credentials=true"
+KUBE_CONTROLLER_MANAGER_ARGS="--leader-elect=true --kubeconfig=/etc/kubernetes/admin.conf"
 KUBE_CONTROLLER_MANAGER_ARGS="$KUBE_CONTROLLER_MANAGER_ARGS --cluster-name=${CLUSTER_UUID}"
 KUBE_CONTROLLER_MANAGER_ARGS="${KUBE_CONTROLLER_MANAGER_ARGS} --allocate-node-cidrs=true"
 KUBE_CONTROLLER_MANAGER_ARGS="${KUBE_CONTROLLER_MANAGER_ARGS} --cluster-cidr=${PODS_NETWORK_CIDR}"
