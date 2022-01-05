@@ -93,6 +93,10 @@ parameters:
     description: uuid/name of an existing subnet to use to provision machines
     default: ""
 
+  fixed_subnet_cidr:
+    type: string
+    description: network range for fixed ip network
+
   master_image:
     type: string
     description: glance image used to boot the server
@@ -496,7 +500,7 @@ parameters:
   flannel_tag:
     type: string
     description: tag of the flannel container
-    default: v0.12.0-amd64
+    default: v0.15.1
 
   flannel_cni_tag:
     type: string
@@ -578,7 +582,7 @@ parameters:
   calico_tag:
     type: string
     description: tag of the calico containers used to provision the calico node
-    default: v3.13.1
+    default: v3.21.2
 
   calico_kube_controllers_tag:
     type: string
@@ -1127,6 +1131,25 @@ resources:
       port_range_max: 65535
       security_group: {get_resource: secgroup_kube_minion}
       remote_group: {get_resource: secgroup_kube_minion}
+  # allow traffic between PODs for ML2/OVN
+  secgroup_rule_tcp_kube_minion_pods_cidr:
+    condition: create_cluster_resources
+    type: OS::Neutron::SecurityGroupRule
+    properties:
+      protocol: tcp
+      port_range_min: 1
+      port_range_max: 65535
+      remote_ip_prefix: {get_param: pods_network_cidr}
+      security_group: {get_resource: secgroup_kube_minion}
+  secgroup_rule_udp_kube_minion_pods_cidr:
+    condition: create_cluster_resources
+    type: OS::Neutron::SecurityGroupRule
+    properties:
+      protocol: udp
+      port_range_min: 1
+      port_range_max: 65535
+      remote_ip_prefix: {get_param: pods_network_cidr}
+      security_group: {get_resource: secgroup_kube_minion}
 
   ######################################################################
   #
@@ -1242,6 +1265,7 @@ resources:
           fixed_network: {get_attr: [network, fixed_network]}
           fixed_network_name: {get_param: fixed_network_name}
           fixed_subnet: {get_attr: [network, fixed_subnet]}
+          fixed_subnet_cidr: {get_param: fixed_subnet_cidr}
           api_pool_id: {get_attr: [api_lb, pool_id]}
           etcd_pool_id: {get_attr: [etcd_lb, pool_id]}
           username: {get_param: username}
