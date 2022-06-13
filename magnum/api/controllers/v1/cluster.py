@@ -390,15 +390,6 @@ class ClustersController(base.Controller):
 
     nodegroups = nodegroup.NodeGroupController()
 
-    @base.Controller.api_version("1.1", "1.10")
-    @expose.expose(ClusterCollection, types.uuid, int, wtypes.text,
-                   wtypes.text)
-    def get_all(self, marker=None, limit=None, sort_key='id', sort_dir='asc'):
-        collection = self._get_all(marker, limit, sort_key, sort_dir)
-        for c in collection.clusters:
-            setattr(c, "project_id", wsme.Unset)
-        return collection
-
     @base.Controller.api_version("1.11")  # noqa
     @expose.expose(ClusterCollection, types.uuid, int, wtypes.text,
                    wtypes.text)
