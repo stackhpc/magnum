@@ -475,10 +475,10 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'docker_volume_type')
         boot_volume_size = mock_cluster.labels.get(
             'boot_volume_size')
-        master_volume_size = mock_cluster.labels.get(
-            'boot_volume_size')
-        minion_volume_size = mock_cluster.labels.get(
-            'boot_volume_size')
+        # master_volume_size = mock_cluster.labels.get(
+        #     'boot_volume_size')
+        # minion_volume_size = mock_cluster.labels.get(
+        #     'boot_volume_size')
         etcd_volume_size = mock_cluster.labels.get(
             'etcd_volume_size')
         hyperkube_prefix = mock_cluster.labels.get('hyperkube_prefix')
@@ -1059,10 +1059,10 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'docker_volume_type')
         boot_volume_size = mock_cluster.labels.get(
             'boot_volume_size')
-        master_volume_size = mock_cluster.labels.get(
-            'boot_volume_size')
-        minion_volume_size = mock_cluster.labels.get(
-            'boot_volume_size')
+        # master_volume_size = mock_cluster.labels.get(
+        #     'boot_volume_size')
+        # minion_volume_size = mock_cluster.labels.get(
+        #     'boot_volume_size')
         etcd_volume_size = mock_cluster.labels.get(
             'etcd_volume_size')
         hyperkube_prefix = mock_cluster.labels.get('hyperkube_prefix')
