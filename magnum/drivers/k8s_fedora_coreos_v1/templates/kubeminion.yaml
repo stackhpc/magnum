@@ -56,6 +56,16 @@ parameters:
     description: >
       type of the cinder boot volume
 
+  minion_volume_size:
+    type: number
+    description: >
+      size of the minion cinder boot volume
+
+  minion_volume_type:
+    type: string
+    description: >
+      type of the minion cinder boot volume
+
   docker_volume_size:
     type: number
     description: >
@@ -404,12 +414,36 @@ parameters:
 
 conditions:
 
-  image_based: {equals: [{get_param: boot_volume_size}, 0]}
-  volume_based:
-    not:
-      equals:
+  image_based:
+    and:
+    - equals:
       - get_param: boot_volume_size
       - 0
+    - equals:
+      - get_param: minion_volume_size
+      - 0
+    
+  volume_based:                       
+    not:
+      and:
+      - equals:
+        - get_param: boot_volume_size
+        - 0
+      - equals:
+        - get_param: minion_volume_size
+        - 0
+
+  minion_volume_size_defined:
+    not:
+      equals:
+        - get_param: minion_volume_size
+        - 0
+        
+  minion_volume_type_defined:
+    not:
+      equals:
+      - get_param: minion_volume_type
+      - ''
 
   extra_network_defined:
     not:
@@ -579,8 +613,16 @@ resources:
     condition: volume_based
     properties:
       image: {get_param: server_image}
-      size: {get_param: boot_volume_size}
-      volume_type: {get_param: boot_volume_type}
+      size: 
+        if:
+          - minion_volume_size_defined
+          - get_param: minion_volume_size
+          - get_param: boot_volume_size
+      volume_type:
+        if:
+          - minion_volume_type_defined
+          - get_param: minion_volume_type
+          - get_param: boot_volume_type
       availability_zone: {get_param: availability_zone}
 
   # do NOT use "_" (underscore) in the Nova server name

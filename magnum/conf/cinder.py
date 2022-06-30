@@ -47,7 +47,29 @@ cinder_opts = [
     cfg.IntOpt('default_boot_volume_size',
                default=0,
                help=_('The default volume size to use for volumes '
-                      'used for VM of COE.'))
+                      'used for VM of COE.')),
+    cfg.StrOpt('default_master_volume_type',
+               default='',
+               help=_('The default boot volume_type to use for volumes '
+                      'used for master VM of COE. To use the cinder volumes '
+                      'for master VM of COE, you need to select a default '
+                      'value. Otherwise, Magnum will select random one from '
+                      'Cinder volume type list.')),
+    cfg.IntOpt('default_master_volume_size',
+               default=0,
+               help=_('The default volume size to use for volumes '
+                      'used for master VM of COE.')),
+    cfg.StrOpt('default_minion_volume_type',
+               default='',
+               help=_('The default boot volume_type to use for volumes '
+                      'used for minion VM of COE. To use the cinder volumes '
+                      'for minion VM of COE, you need to select a default '
+                      'value. Otherwise, Magnum will select random one from '
+                      'Cinder volume type list.')),
+    cfg.IntOpt('default_minion_volume_size',
+               default=0,
+               help=_('The default volume size to use for volumes '
+                      'used for minion VM of COE.'))
 ]
 
 cinder_client_opts = [

@@ -32,6 +32,16 @@ def get_default_boot_volume_type(context):
             _get_random_volume_type(context))
 
 
+def get_default_master_volume_type(context):
+    return (CONF.cinder.default_master_volume_type or
+            _get_random_volume_type(context))
+
+
+def get_default_minion_volume_type(context):
+    return (CONF.cinder.default_minion_volume_type or
+            _get_random_volume_type(context))
+
+
 def get_default_etcd_volume_type(context):
     return (CONF.cinder.default_etcd_volume_type or
             _get_random_volume_type(context))
