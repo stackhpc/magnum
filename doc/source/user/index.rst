@@ -3140,6 +3140,33 @@ be used if none of those options is set. In case of master_volume_size or
 minion_volume_size missing value for boot_volume_size is used. If neither
 is defined instances will not be volume based.
 
+Labels can be used to customize nodes boot volume at creation time:
+
+- boot_volume_type
+- boot_volume_size
+
+These define volume type and size used for boot media of node vm, and they can
+be further overriden by:
+
+- master_volume_type
+- master_volume_size
+- minion_volume_type
+- minion_volume_size
+
+Labels shown above allow user to use different storage types and sizes for
+master and minion nodes. They can be used independently of each other
+for ex. boot_volume_type to define type of storage to use for both master
+and minion vms, along with master_volume_size and minion_volume_size
+setting size of their boot volumes. Another example would be usage of
+boot_volume_size to define size of both master and minion, with different
+storage types for them set by master_volume_type and minion_volume_type.
+
+If either master_volume_type or minion_volume_type is missing,
+boot_volume_type will be used instead. A random volume type from Cinder will
+be used if none of those options is set. In case of master_volume_size or
+minion_volume_size missing value for boot_volume_size is used. If neither
+is defined instances will not be volume based.
+
 Following are some examples for using Cinder as persistent storage.
 
 Using Cinder in Kubernetes
