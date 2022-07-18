@@ -473,8 +473,6 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'influx_grafana_dashboard_enabled')
         docker_volume_type = mock_cluster.labels.get(
             'docker_volume_type')
-        boot_volume_size = mock_cluster.labels.get(
-            'boot_volume_size')
         etcd_volume_size = mock_cluster.labels.get(
             'etcd_volume_size')
         hyperkube_prefix = mock_cluster.labels.get('hyperkube_prefix')
@@ -607,6 +605,7 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         npd_enabled = mock_cluster.labels.get('npd_enabled')
         boot_volume_size = mock_cluster.labels.get('boot_volume_size')
         boot_volume_type = mock_cluster.labels.get('boot_volume_type')
+        worker_volume_type = mock_cluster.labels.get('worker_volume_type')
         etcd_volume_type = mock_cluster.labels.get('etcd_volume_type')
         ostree_remote = mock_cluster.labels.get('ostree_remote')
         ostree_commit = mock_cluster.labels.get('ostree_commit')
@@ -654,6 +653,8 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
                 influx_grafana_dashboard_enabled,
             'docker_volume_type': docker_volume_type,
             'boot_volume_size': boot_volume_size,
+            'master_volume_size': boot_volume_size,
+            'worker_volume_size': boot_volume_size,
             'etcd_volume_size': etcd_volume_size,
             'kubelet_options': kubelet_options,
             'kubeapi_options': kubeapi_options,
@@ -741,6 +742,10 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'minion_kube_tag': kube_tag,
             'boot_volume_size': boot_volume_size,
             'boot_volume_type': boot_volume_type,
+            'master_volume_size': boot_volume_size,
+            'master_volume_type': boot_volume_type,
+            'worker_volume_size': boot_volume_size,
+            'worker_volume_type': worker_volume_type,
             'etcd_volume_type': etcd_volume_type,
             'ostree_remote': ostree_remote,
             'ostree_commit': ostree_commit,
@@ -1177,6 +1182,7 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         npd_enabled = mock_cluster.labels.get('npd_enabled')
         boot_volume_size = mock_cluster.labels.get('boot_volume_size')
         boot_volume_type = mock_cluster.labels.get('boot_volume_type')
+        worker_volume_type = mock_cluster.labels.get('worker_volume_type')
         etcd_volume_type = mock_cluster.labels.get('etcd_volume_type')
         ostree_remote = mock_cluster.labels.get('ostree_remote')
         ostree_commit = mock_cluster.labels.get('ostree_commit')
@@ -1227,6 +1233,8 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
                 influx_grafana_dashboard_enabled,
             'docker_volume_type': docker_volume_type,
             'boot_volume_size': boot_volume_size,
+            'master_volume_size': boot_volume_size,
+            'worker_volume_size': boot_volume_size,
             'etcd_volume_size': etcd_volume_size,
             'kubelet_options': kubelet_options,
             'kubeapi_options': kubeapi_options,
@@ -1314,6 +1322,10 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'minion_kube_tag': kube_tag,
             'boot_volume_size': boot_volume_size,
             'boot_volume_type': boot_volume_type,
+            'master_volume_size': boot_volume_size,
+            'master_volume_type': boot_volume_type,
+            'worker_volume_size': boot_volume_size,
+            'worker_volume_type': worker_volume_type,
             'etcd_volume_type': etcd_volume_type,
             'ostree_remote': ostree_remote,
             'ostree_commit': ostree_commit,
