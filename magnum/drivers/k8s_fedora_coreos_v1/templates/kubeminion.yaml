@@ -55,6 +55,7 @@ parameters:
     type: string
     description: >
       type of the minion cinder boot volume
+    default: ""
 
   docker_volume_size:
     type: number
