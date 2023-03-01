@@ -22,6 +22,7 @@ from oslo_log import log as logging
 from oslo_utils import encodeutils
 import yaml
 
+from magnum.api import utils as api_utils
 from magnum.common import clients
 from magnum.common import utils
 from magnum.common.x509 import operations as x509
@@ -108,13 +109,14 @@ class Driver(driver.Driver):
             (f"{name}-{suffix}" if suffix else name).lower(),
         )
 
-    def _update_helm_release(self, cluster, cluster_template=None):
+    def _update_helm_release(self, context, cluster):
         cluster_template = cluster_template or cluster.cluster_template
+        image_uuid = self._get_image_uuid(context, cluster_template.image_id)
         values = {
             "kubernetesVersion": cluster_template.labels["kube_tag"].lstrip(
                 "v"
             ),
-            "machineImageId": cluster_template.image_id,
+            "machineImageId": image_uuid,
             "cloudCredentialsSecretName": self._sanitised_name(
                 cluster.name, "cloud-credentials"
             ),
@@ -153,6 +155,11 @@ class Driver(driver.Driver):
             version=MAGNUM_HELM_CHART_VERSION,
             namespace=self._namespace(cluster),
         )
+
+    def _get_image_uuid(self, context, image_identifier):
+        image = api_utils.get_openstack_resource(
+            osc.glance().images, image_identifier, 'images')
+        return image.id
 
     def _update_status_updating(self, cluster, capi_cluster):
         # As soon as we know the API address, we should set it
@@ -330,7 +337,7 @@ class Driver(driver.Driver):
             )
 
         # Install the Helm release for the cluster
-        self._update_helm_release(cluster)
+        self._update_helm_release(context, cluster)
 
     def update_cluster(
         self, context, cluster, scale_manager=None, rollback=False
