@@ -114,7 +114,7 @@ class Driver(driver.Driver):
         image_uuid = self._get_image_uuid(context, cluster_template.image_id)
         # TODO(johngarbutt): should get the kube_tag from the image?
         # and how do we validate its a supported one?
-        kube_version = cluster_template.labels.get["kube_tag"].lstrip("v")
+        kube_version = cluster_template.labels["kube_tag"].lstrip("v")
         values = {
             # as its normally optional in the template anyway
             "kubernetesVersion": kube_version,

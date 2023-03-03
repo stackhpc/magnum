@@ -26,7 +26,7 @@ cat <<EOF > /opt/stack/local.conf
 enable_plugin barbican https://opendev.org/openstack/barbican
 enable_plugin heat https://opendev.org/openstack/heat
 enable_plugin neutron https://opendev.org/openstack/neutron
-enable_plugin magnum https://opendev.org/openstack/magnum
+enable_plugin magnum https://github.com/stackhpc/magnum johng-cluster-api-merge-yoga2
 enable_plugin magnum-ui https://opendev.org/openstack/magnum-ui
 enable_plugin octavia https://opendev.org/openstack/octavia
 enable_plugin octavia-dashboard https://opendev.org/openstack/octavia-dashboard
@@ -34,7 +34,7 @@ LIBS_FROM_GIT+=python-octaviaclient
 DATABASE_PASSWORD=secretdatabase
 RABBIT_PASSWORD=secretrabbit
 ADMIN_PASSWORD=secretadmin
-HOST_IP= #fill this in 
+HOST_IP=10.0.3.91 #change this 
 SERVICE_PASSWORD=secretservice
 SERVICE_TOKEN=111222333444
 # Enable Logging
@@ -58,8 +58,6 @@ sudo chmod go+rw `tty`
 # Stack that stack!
 /opt/stack/stack.sh
 
-# Cherry pick barbicanclient fix 
-git fetch https://review.opendev.org/openstack/magnum refs/changes/65/876265/2 && git cherry-pick FETCH_HEAD
 
 #
 # Install this checkout and restart the Magnum services
@@ -72,6 +70,7 @@ sudo systemctl restart devstack@magnum-api devstack@magnum-cond
 #
 # Setup k8s for Cluster API 
 #
+source /opt/stack/openrc admin
 
 # Add k8s image
 curl -O https://minio.services.osism.tech/openstack-k8s-capi-images/ubuntu-2004-kube-v1.25/ubuntu-2004-kube-v1.25.5.qcow2
