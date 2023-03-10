@@ -85,7 +85,7 @@ ExecStart=/bin/bash -c '/usr/bin/podman run --name kubelet \\
     --pid host \\
     --network host \\
     --entrypoint /hyperkube \\
-    --volume /:/rootfs:ro \\
+    --volume /:/rootfs:rslave,ro \\
     --volume /etc/cni/net.d:/etc/cni/net.d:ro,z \\
     --volume /etc/kubernetes:/etc/kubernetes:ro,z \\
     --volume /usr/lib/os-release:/usr/lib/os-release:ro \\
@@ -279,6 +279,8 @@ if [ ${CONTAINER_RUNTIME} = "containerd"  ] ; then
     KUBELET_ARGS="${KUBELET_ARGS} --container-runtime=remote"
     KUBELET_ARGS="${KUBELET_ARGS} --runtime-request-timeout=15m"
     KUBELET_ARGS="${KUBELET_ARGS} --container-runtime-endpoint=unix:///run/containerd/containerd.sock"
+else
+    KUBELET_ARGS="${KUBELET_ARGS} --network-plugin=cni --cni-conf-dir=/etc/cni/net.d --cni-bin-dir=/opt/cni/bin"
 fi
 
 auto_healing_enabled=$(echo ${AUTO_HEALING_ENABLED} | tr '[:upper:]' '[:lower:]')
@@ -287,7 +289,6 @@ if [[ "${auto_healing_enabled}" = "true" && "${autohealing_controller}" = "drain
     KUBELET_ARGS="${KUBELET_ARGS} --node-labels=draino-enabled=true"
 fi
 
-KUBELET_ARGS="${KUBELET_ARGS} --network-plugin=cni --cni-conf-dir=/etc/cni/net.d --cni-bin-dir=/opt/cni/bin"
 
 sed -i '
     /^KUBELET_ADDRESS=/ s/=.*/="--address=0.0.0.0"/
