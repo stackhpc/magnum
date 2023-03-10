@@ -29,8 +29,6 @@ from magnum.drivers.k8s_fedora_atomic_v1 import driver as k8sa_dr
 from magnum.drivers.k8s_fedora_atomic_v1 import template_def as k8sa_tdef
 from magnum.drivers.k8s_fedora_ironic_v1 import driver as k8s_i_dr
 from magnum.drivers.k8s_fedora_ironic_v1 import template_def as k8si_tdef
-from magnum.drivers.mesos_ubuntu_v1 import driver as mesos_dr
-from magnum.drivers.mesos_ubuntu_v1 import template_def as mesos_tdef
 from magnum.drivers.swarm_fedora_atomic_v1 import driver as swarm_dr
 from magnum.drivers.swarm_fedora_atomic_v1 import template_def as swarm_tdef
 from magnum.drivers.swarm_fedora_atomic_v2 import driver as swarm_v2_dr
@@ -117,17 +115,6 @@ class TemplateDefinitionTestCase(base.TestCase):
 
         self.assertIsInstance(definition,
                               swarm_v2_tdef.AtomicSwarmTemplateDefinition)
-
-    @mock.patch('magnum.drivers.common.driver.Driver.get_driver')
-    def test_get_vm_ubuntu_mesos_definition(self, mock_driver):
-        mock_driver.return_value = mesos_dr.Driver()
-        cluster_driver = driver.Driver.get_driver('vm',
-                                                  'ubuntu',
-                                                  'mesos')
-        definition = cluster_driver.get_template_definition()
-
-        self.assertIsInstance(definition,
-                              mesos_tdef.UbuntuMesosTemplateDefinition)
 
     def test_get_driver_not_supported(self):
         self.assertRaises(exception.ClusterTypeNotSupported,
@@ -608,6 +595,8 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'csi_resizer_tag')
         csi_node_driver_registrar_tag = mock_cluster.labels.get(
             'csi_node_driver_registrar_tag')
+        csi_liveness_probe_tag = mock_cluster.labels.get(
+            'csi_liveness_probe_tag')
         draino_tag = mock_cluster.labels.get('draino_tag')
         autoscaler_tag = mock_cluster.labels.get('autoscaler_tag')
         min_node_count = mock_cluster.labels.get('min_node_count')
@@ -630,6 +619,10 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         metrics_scraper_tag = mock_cluster.labels.get('metrics_scraper_tag')
         master_lb_allowed_cidrs = mock_cluster.labels.get(
             'master_lb_allowed_cidrs')
+        octavia_provider = mock_cluster.labels.get('octavia_provider')
+        octavia_lb_algorithm = mock_cluster.labels.get('octavia_lb_algorithm')
+        octavia_lb_healthcheck = mock_cluster.labels.get(
+                'octavia_lb_healthcheck')
 
         k8s_def = k8sa_tdef.AtomicK8sTemplateDefinition()
 
@@ -729,6 +722,7 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'csi_snapshotter_tag': csi_snapshotter_tag,
             'csi_resizer_tag': csi_resizer_tag,
             'csi_node_driver_registrar_tag': csi_node_driver_registrar_tag,
+            'csi_liveness_probe_tag': csi_liveness_probe_tag,
             'draino_tag': draino_tag,
             'autoscaler_tag': autoscaler_tag,
             'min_node_count': min_node_count,
@@ -738,7 +732,6 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'kube_version': kube_tag,
             'master_kube_tag': kube_tag,
             'minion_kube_tag': kube_tag,
-            'boot_volume_size': boot_volume_size,
             'boot_volume_type': boot_volume_type,
             'etcd_volume_type': etcd_volume_type,
             'ostree_remote': ostree_remote,
@@ -754,6 +747,9 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'metrics_scraper_tag': metrics_scraper_tag,
             'master_lb_allowed_cidrs': master_lb_allowed_cidrs,
             'fixed_subnet_cidr': '20.200.0.0/16',
+            'octavia_provider': octavia_provider,
+            'octavia_lb_algorithm': octavia_lb_algorithm,
+            'octavia_lb_healthcheck': octavia_lb_healthcheck,
         }}
         mock_get_params.assert_called_once_with(mock_context,
                                                 mock_cluster_template,
@@ -1162,6 +1158,8 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'csi_resizer_tag')
         csi_node_driver_registrar_tag = mock_cluster.labels.get(
             'csi_node_driver_registrar_tag')
+        csi_liveness_probe_tag = mock_cluster.labels.get(
+            'csi_liveness_probe_tag')
         draino_tag = mock_cluster.labels.get('draino_tag')
         autoscaler_tag = mock_cluster.labels.get('autoscaler_tag')
         min_node_count = mock_cluster.labels.get('min_node_count')
@@ -1185,6 +1183,11 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
 
         master_lb_allowed_cidrs = mock_cluster.labels.get(
             'master_lb_allowed_cidrs')
+
+        octavia_provider = mock_cluster.labels.get('octavia_provider')
+        octavia_lb_algorithm = mock_cluster.labels.get('octavia_lb_algorithm')
+        octavia_lb_healthcheck = mock_cluster.labels.get(
+                'octavia_lb_healthcheck')
 
         k8s_def = k8sa_tdef.AtomicK8sTemplateDefinition()
 
@@ -1286,6 +1289,7 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'csi_snapshotter_tag': csi_snapshotter_tag,
             'csi_resizer_tag': csi_resizer_tag,
             'csi_node_driver_registrar_tag': csi_node_driver_registrar_tag,
+            'csi_liveness_probe_tag': csi_liveness_probe_tag,
             'draino_tag': draino_tag,
             'autoscaler_tag': autoscaler_tag,
             'min_node_count': min_node_count,
@@ -1295,7 +1299,6 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'kube_version': kube_tag,
             'master_kube_tag': kube_tag,
             'minion_kube_tag': kube_tag,
-            'boot_volume_size': boot_volume_size,
             'boot_volume_type': boot_volume_type,
             'etcd_volume_type': etcd_volume_type,
             'ostree_remote': ostree_remote,
@@ -1311,6 +1314,9 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'metrics_scraper_tag': metrics_scraper_tag,
             'master_lb_allowed_cidrs': master_lb_allowed_cidrs,
             'fixed_subnet_cidr': '20.200.0.0/16',
+            'octavia_provider': octavia_provider,
+            'octavia_lb_algorithm': octavia_lb_algorithm,
+            'octavia_lb_healthcheck': octavia_lb_healthcheck,
         }}
         mock_get_params.assert_called_once_with(mock_context,
                                                 mock_cluster_template,
@@ -2105,145 +2111,3 @@ class AtomicSwarmTemplateDefinitionTestCase(base.TestCase):
         self.assertEqual(expected_api_address, self.mock_cluster.api_address)
         self.assertEqual(expected_node_addresses,
                          self.worker_ng.node_addresses)
-
-
-class UbuntuMesosTemplateDefinitionTestCase(base.TestCase):
-
-    def setUp(self):
-        super(UbuntuMesosTemplateDefinitionTestCase, self).setUp()
-        self.master_ng = mock.MagicMock(uuid='master_ng', role='master')
-        self.worker_ng = mock.MagicMock(uuid='worker_ng', role='worker')
-        self.nodegroups = [self.master_ng, self.worker_ng]
-        self.mock_cluster = mock.MagicMock(nodegroups=self.nodegroups,
-                                           default_ng_worker=self.worker_ng,
-                                           default_ng_master=self.master_ng)
-
-    @mock.patch('magnum.common.clients.OpenStackClients')
-    @mock.patch('magnum.drivers.heat.template_def.BaseTemplateDefinition'
-                '.get_params')
-    def test_mesos_get_params(self,
-                              mock_get_params,
-                              mock_osc_class):
-        mock_context = mock.MagicMock()
-        mock_context.auth_url = 'http://192.168.10.10:5000/v3'
-        mock_context.user_name = 'mesos_user'
-        mock_context.project_id = 'admin'
-        mock_context.domain_name = 'domainname'
-        mock_cluster_template = mock.MagicMock()
-        mock_cluster_template.tls_disabled = False
-        mock_cluster = mock.MagicMock()
-        mock_cluster.uuid = '5d12f6fd-a196-4bf0-ae4c-1f639a523a52'
-        del mock_cluster.stack_id
-        rexray_preempt = mock_cluster.labels.get('rexray_preempt')
-        mesos_slave_isolation = mock_cluster.labels.get(
-            'mesos_slave_isolation')
-        mesos_slave_work_dir = mock_cluster.labels.get(
-            'mesos_slave_work_dir')
-        mesos_slave_image_providers = mock_cluster.labels.get(
-            'image_providers')
-        mesos_slave_executor_env_variables = mock_cluster.labels.get(
-            'mesos_slave_executor_env_variables')
-        mock_osc = mock.MagicMock()
-        mock_osc.cinder_region_name.return_value = 'RegionOne'
-        mock_osc_class.return_value = mock_osc
-
-        mesos_def = mesos_tdef.UbuntuMesosTemplateDefinition()
-
-        CONF.set_override('nodes_affinity_policy',
-                          'anti-affinity',
-                          group='cluster')
-
-        mesos_def.get_params(mock_context, mock_cluster_template, mock_cluster)
-
-        expected_kwargs = {'extra_params': {
-            'region_name': mock_osc.cinder_region_name.return_value,
-            'nodes_affinity_policy': 'anti-affinity',
-            'auth_url': 'http://192.168.10.10:5000/v3',
-            'username': 'mesos_user',
-            'tenant_name': 'admin',
-            'domain_name': 'domainname',
-            'rexray_preempt': rexray_preempt,
-            'mesos_slave_isolation': mesos_slave_isolation,
-            'mesos_slave_work_dir': mesos_slave_work_dir,
-            'mesos_slave_executor_env_variables':
-                mesos_slave_executor_env_variables,
-            'mesos_slave_image_providers': mesos_slave_image_providers}}
-        mock_get_params.assert_called_once_with(mock_context,
-                                                mock_cluster_template,
-                                                mock_cluster,
-                                                **expected_kwargs)
-
-    @mock.patch('magnum.common.clients.OpenStackClients')
-    @mock.patch('magnum.drivers.heat.template_def.TemplateDefinition'
-                '.get_output')
-    def test_mesos_get_scale_params(self, mock_get_output,
-                                    mock_osc_class):
-        mock_context = mock.MagicMock()
-        mock_cluster = mock.MagicMock()
-        mock_cluster.uuid = '5d12f6fd-a196-4bf0-ae4c-1f639a523a52'
-
-        removal_nodes = ['node1', 'node2']
-        node_count = 7
-        mock_scale_manager = mock.MagicMock()
-        mock_scale_manager.get_removal_nodes.return_value = removal_nodes
-
-        mesos_def = mesos_tdef.UbuntuMesosTemplateDefinition()
-
-        scale_params = mesos_def.get_scale_params(
-            mock_context,
-            mock_cluster,
-            node_count,
-            mock_scale_manager)
-        expected_scale_params = {'slaves_to_remove': ['node1', 'node2'],
-                                 'number_of_slaves': 7}
-        self.assertEqual(scale_params, expected_scale_params)
-
-    def test_mesos_get_heat_param(self):
-        mesos_def = mesos_tdef.UbuntuMesosTemplateDefinition()
-
-        mesos_def.add_nodegroup_params(self.mock_cluster)
-
-        heat_param = mesos_def.get_heat_param(nodegroup_attr='node_count',
-                                              nodegroup_uuid='worker_ng')
-        self.assertEqual('number_of_slaves', heat_param)
-
-        heat_param = mesos_def.get_heat_param(nodegroup_attr='node_count',
-                                              nodegroup_uuid='master_ng')
-        self.assertEqual('number_of_masters', heat_param)
-
-    def test_update_outputs(self):
-        mesos_def = mesos_tdef.UbuntuMesosTemplateDefinition()
-
-        expected_api_address = 'updated_address'
-        expected_node_addresses = ['ex_slave', 'address']
-        expected_master_addresses = ['ex_master', 'address']
-
-        outputs = [
-            {"output_value": expected_api_address,
-             "description": "No description given",
-             "output_key": "api_address"},
-            {"output_value": ['any', 'output'],
-             "description": "No description given",
-             "output_key": "mesos_master_private"},
-            {"output_value": expected_master_addresses,
-             "description": "No description given",
-             "output_key": "mesos_master"},
-            {"output_value": ['any', 'output'],
-             "description": "No description given",
-             "output_key": "mesos_slaves_private"},
-            {"output_value": expected_node_addresses,
-             "description": "No description given",
-             "output_key": "mesos_slaves"},
-        ]
-        mock_stack = mock.MagicMock()
-        mock_stack.to_dict.return_value = {'outputs': outputs}
-        mock_cluster_template = mock.MagicMock()
-
-        mesos_def.update_outputs(mock_stack, mock_cluster_template,
-                                 self.mock_cluster)
-
-        self.assertEqual(expected_api_address, self.mock_cluster.api_address)
-        self.assertEqual(expected_node_addresses,
-                         self.mock_cluster.default_ng_worker.node_addresses)
-        self.assertEqual(expected_master_addresses,
-                         self.mock_cluster.default_ng_master.node_addresses)

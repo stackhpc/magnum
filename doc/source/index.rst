@@ -48,10 +48,17 @@ Features
 ========
 
 * Abstractions for Clusters
-* Integration with Kubernetes, Swarm, Mesos for backend container technology
+* Integration with Kubernetes, Swarm for backend container technology
 * Integration with Keystone for multi-tenant security
 * Integration with Neutron for Kubernetes multi-tenancy network security
 * Integration with Cinder to provide volume service for containers
+
+Installation Guide
+==================
+.. toctree::
+   :maxdepth: 1
+
+   install/index
 
 User Documentation
 ==================
@@ -59,6 +66,7 @@ User Documentation
    :maxdepth: 1
 
    user/index
+   user/monitoring.rst
    user/glossary.rst
 
 Contributor Guide
@@ -74,13 +82,6 @@ Admin Guide
    :maxdepth: 1
 
    admin/index
-
-Installation Guide
-==================
-.. toctree::
-   :maxdepth: 1
-
-   install/index
 
 CLI Guide
 =========

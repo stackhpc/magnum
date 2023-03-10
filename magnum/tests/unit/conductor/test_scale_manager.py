@@ -12,12 +12,14 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import tempfile
 from unittest import mock
+
+from requests_mock.contrib import fixture
 
 from magnum.common import exception
 from magnum.conductor import scale_manager
 from magnum.drivers.common.k8s_scale_manager import K8sScaleManager
-from magnum.drivers.mesos_ubuntu_v1.scale_manager import MesosScaleManager
 from magnum.tests import base
 
 
@@ -181,42 +183,44 @@ class TestScaleManager(base.TestCase):
 
 class TestK8sScaleManager(base.TestCase):
 
+    def setUp(self):
+        super(TestK8sScaleManager, self).setUp()
+        self.requests_mock = self.useFixture(fixture.Fixture())
+
     @mock.patch('magnum.objects.Cluster.get_by_uuid')
-    @mock.patch('magnum.conductor.k8s_api.create_k8s_api')
-    def test_get_hosts_with_container(self, mock_create_api, mock_get):
-        pods = mock.MagicMock()
-        pod_1 = mock.MagicMock()
-        pod_1.spec.node_name = 'node1'
-        pod_2 = mock.MagicMock()
-        pod_2.spec.node_name = 'node2'
-        pods.items = [pod_1, pod_2]
-        mock_api = mock.MagicMock()
-        mock_api.list_namespaced_pod.return_value = pods
-        mock_create_api.return_value = mock_api
+    @mock.patch('magnum.conductor.k8s_api.create_client_files')
+    def test_get_hosts_with_container(
+            self, mock_create_client_files, mock_get):
+        mock_cluster = mock.MagicMock()
+        mock_cluster.api_address = "https://foobar.com:6443"
+
+        mock_create_client_files.return_value = (
+            tempfile.NamedTemporaryFile(),
+            tempfile.NamedTemporaryFile(),
+            tempfile.NamedTemporaryFile()
+        )
+
+        self.requests_mock.register_uri(
+            'GET',
+            f"{mock_cluster.api_address}/api/v1/namespaces/default/pods",
+            json={
+                'items': [
+                    {
+                        'spec': {
+                            'node_name': 'node1',
+                        }
+                    },
+                    {
+                        'spec': {
+                            'node_name': 'node2',
+                        }
+                    }
+                ]
+            },
+        )
 
         mgr = K8sScaleManager(
             mock.MagicMock(), mock.MagicMock(), mock.MagicMock())
         hosts = mgr._get_hosts_with_container(
-            mock.MagicMock(), mock.MagicMock())
-        self.assertEqual(hosts, {'node1', 'node2'})
-
-
-class TestMesosScaleManager(base.TestCase):
-
-    @mock.patch('magnum.objects.Cluster.get_by_uuid')
-    @mock.patch('marathon.MarathonClient')
-    @mock.patch('marathon.MarathonClient.list_tasks')
-    def test_get_hosts_with_container(self, mock_list_tasks,
-                                      mock_client,  mock_get):
-        task_1 = mock.MagicMock()
-        task_1.host = 'node1'
-        task_2 = mock.MagicMock()
-        task_2.host = 'node2'
-        tasks = [task_1, task_2]
-        mock_list_tasks.return_value = tasks
-
-        mgr = MesosScaleManager(
-            mock.MagicMock(), mock.MagicMock(), mock.MagicMock())
-        hosts = mgr._get_hosts_with_container(
-            mock.MagicMock(), mock.MagicMock())
+            mock.MagicMock(), mock_cluster)
         self.assertEqual(hosts, {'node1', 'node2'})

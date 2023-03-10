@@ -48,7 +48,9 @@ _FACADE = None
 def _create_facade_lazily():
     global _FACADE
     if _FACADE is None:
-        _FACADE = db_session.EngineFacade.from_config(CONF)
+        # FIXME(karolinku): autocommit=True it's not compatible with
+        # SQLAlchemy 2.0, and will be removed in future
+        _FACADE = db_session.EngineFacade.from_config(CONF, autocommit=True)
         if profiler_sqlalchemy:
             if CONF.profiler.enabled and CONF.profiler.trace_sqlalchemy:
                 profiler_sqlalchemy.add_tracing(sa, _FACADE.get_engine(), "db")
@@ -344,7 +346,7 @@ class Connection(api.Connection):
         query = self._add_tenant_filters(context, query)
         public_q = model_query(models.ClusterTemplate).filter_by(public=True)
         query = query.union(public_q)
-        query = query.filter(models.ClusterTemplate.id==cluster_template_id)
+        query = query.filter(models.ClusterTemplate.id == cluster_template_id)
         try:
             return query.one()
         except NoResultFound:
@@ -356,7 +358,8 @@ class Connection(api.Connection):
         query = self._add_tenant_filters(context, query)
         public_q = model_query(models.ClusterTemplate).filter_by(public=True)
         query = query.union(public_q)
-        query = query.filter(models.ClusterTemplate.uuid==cluster_template_uuid)
+        query = query.filter(
+                models.ClusterTemplate.uuid == cluster_template_uuid)
         try:
             return query.one()
         except NoResultFound:
@@ -368,7 +371,8 @@ class Connection(api.Connection):
         query = self._add_tenant_filters(context, query)
         public_q = model_query(models.ClusterTemplate).filter_by(public=True)
         query = query.union(public_q)
-        query = query.filter(models.ClusterTemplate.name==cluster_template_name)
+        query = query.filter(
+                models.ClusterTemplate.name == cluster_template_name)
         try:
             return query.one()
         except MultipleResultsFound:
@@ -635,11 +639,12 @@ class Connection(api.Connection):
     def delete_quota(self, project_id, resource):
         session = get_session()
         with session.begin():
-            query = model_query(models.Quota, session=session)
+            query = model_query(models.Quota, session=session) \
+                .filter_by(project_id=project_id) \
+                .filter_by(resource=resource)
 
             try:
-                query.filter_by(project_id=project_id).filter_by(
-                    resource=resource).one()
+                query.one()
             except NoResultFound:
                 msg = (_('project_id %(project_id)s resource %(resource)s.') %
                        {'project_id': project_id, 'resource': resource})

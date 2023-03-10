@@ -16,13 +16,13 @@
 import functools
 
 from oslo_log import log
-from oslo_log.versionutils import deprecated
 from oslo_service import loopingcall
 from oslo_service import periodic_task
 
 from pycadf import cadftaxonomy as taxonomy
 
 from magnum.common import context
+from magnum.common import exception
 from magnum.common import profiler
 from magnum.common import rpc
 from magnum.conductor import monitors
@@ -68,7 +68,19 @@ class ClusterUpdateJob(object):
         # get the driver for the cluster
         cdriver = driver.Driver.get_driver_for_cluster(self.ctx, self.cluster)
         # ask the driver to sync status
-        cdriver.update_cluster_status(self.ctx, self.cluster)
+        try:
+            cdriver.update_cluster_status(self.ctx, self.cluster)
+        except exception.AuthorizationFailure as e:
+            trust_ex = ("Could not find trust: %s" % self.cluster.trust_id)
+            # Try to use admin context if trust not found.
+            # This will make sure even with trust got deleted out side of
+            # Magnum, we still be able to check cluster status
+            if trust_ex in str(e):
+                cdriver.update_cluster_status(
+                    self.ctx, self.cluster, use_admin_ctx=True)
+            else:
+                raise
+
         LOG.debug("Status for cluster %s updated to %s (%s)",
                   self.cluster.id, self.cluster.status,
                   self.cluster.status_reason)
@@ -152,9 +164,7 @@ class MagnumPeriodicTasks(periodic_task.PeriodicTasks):
         super(MagnumPeriodicTasks, self).__init__(conf)
         self.notifier = rpc.get_notifier()
 
-    @periodic_task.periodic_task(
-        spacing=CONF.kubernetes.health_polling_interval,
-        run_immediately=True)
+    @periodic_task.periodic_task(spacing=10, run_immediately=True)
     @set_context
     def sync_cluster_status(self, ctx):
         try:
@@ -184,7 +194,9 @@ class MagnumPeriodicTasks(periodic_task.PeriodicTasks):
                 "Ignore error [%s] when syncing up cluster status.",
                 e, exc_info=True)
 
-    @periodic_task.periodic_task(spacing=10, run_immediately=True)
+    @periodic_task.periodic_task(
+        spacing=CONF.kubernetes.health_polling_interval,
+        run_immediately=True)
     @set_context
     def sync_cluster_health_status(self, ctx):
         try:
@@ -213,56 +225,6 @@ class MagnumPeriodicTasks(periodic_task.PeriodicTasks):
             LOG.warning(
                 "Ignore error [%s] when syncing up cluster status.",
                 e, exc_info=True)
-
-    @periodic_task.periodic_task(run_immediately=True)
-    @set_context
-    @deprecated(as_of=deprecated.ROCKY)
-    def _send_cluster_metrics(self, ctx):
-        if not CONF.drivers.send_cluster_metrics:
-            LOG.debug('Skip sending cluster metrics')
-            return
-
-        LOG.debug('Starting to send cluster metrics')
-        for cluster in objects.Cluster.list(ctx):
-            if cluster.status not in (
-                    objects.fields.ClusterStatus.CREATE_COMPLETE,
-                    objects.fields.ClusterStatus.UPDATE_COMPLETE):
-                continue
-
-            monitor = monitors.create_monitor(ctx, cluster)
-            if monitor is None:
-                continue
-
-            try:
-                monitor.pull_data()
-            except Exception as e:
-                LOG.warning(
-                    "Skip pulling data from cluster %(cluster)s due to "
-                    "error: %(e)s",
-                    {'e': e, 'cluster': cluster.uuid}, exc_info=True)
-                continue
-
-            metrics = list()
-            for name in monitor.get_metric_names():
-                try:
-                    metric = {
-                        'name': name,
-                        'value': monitor.compute_metric_value(name),
-                        'unit': monitor.get_metric_unit(name),
-                    }
-                    metrics.append(metric)
-                except Exception as e:
-                    LOG.warning("Skip adding metric %(name)s due to "
-                                "error: %(e)s",
-                                {'e': e, 'name': name}, exc_info=True)
-
-            message = dict(metrics=metrics,
-                           user_id=cluster.user_id,
-                           project_id=cluster.project_id,
-                           resource_id=cluster.uuid)
-            LOG.debug("About to send notification: '%s'", message)
-            self.notifier.info(ctx, "magnum.cluster.metrics.update",
-                               message)
 
 
 def setup(conf, tg):

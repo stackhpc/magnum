@@ -116,7 +116,6 @@ class TestClusterConductorWithK8s(base.TestCase):
                        'service_cluster_ip_range': '10.254.0.0/16',
                        'boot_volume_size': '60'},
             'master_flavor_id': 'master_flavor_id',
-            'flavor_id': 'flavor_id',
             'project_id': 'project_id',
             'keystone_auth_default_policy': self.keystone_auth_default_policy,
             'fixed_network': 'fixed_network',
@@ -370,8 +369,6 @@ class TestClusterConductorWithK8s(base.TestCase):
             'portal_network_cidr': '10.254.0.0/16',
             'project_id': 'project_id',
             'max_node_count': 2,
-            'master_image': 'image_id',
-            'minion_image': 'image_id',
             'keystone_auth_default_policy': self.keystone_auth_default_policy,
             'boot_volume_size': '60',
             'boot_volume_type': 'lvmdriver-1',
@@ -382,6 +379,9 @@ class TestClusterConductorWithK8s(base.TestCase):
             'post_install_manifest_url': '',
             'master_lb_allowed_cidrs': None,
             'fixed_subnet_cidr': self.fixed_subnet_cidr,
+            'octavia_provider': None,
+            'octavia_lb_algorithm': None,
+            'octavia_lb_healthcheck': None,
         }
 
         if missing_attr is not None:
@@ -527,8 +527,6 @@ class TestClusterConductorWithK8s(base.TestCase):
             'portal_network_cidr': '10.254.0.0/16',
             'project_id': 'project_id',
             'max_node_count': 2,
-            'master_image': 'image_id',
-            'minion_image': 'image_id',
             'keystone_auth_default_policy': self.keystone_auth_default_policy,
             'boot_volume_size': '60',
             'boot_volume_type': 'lvmdriver-1',
@@ -538,7 +536,10 @@ class TestClusterConductorWithK8s(base.TestCase):
             'worker_nodegroup_name': 'worker_ng',
             'post_install_manifest_url': '',
             'master_lb_allowed_cidrs': None,
-            'fixed_subnet_cidr': self.fixed_subnet_cidr
+            'fixed_subnet_cidr': self.fixed_subnet_cidr,
+            'octavia_provider': None,
+            'octavia_lb_algorithm': None,
+            'octavia_lb_healthcheck': None,
         }
 
         self.assertEqual(expected, definition)
@@ -676,7 +677,10 @@ class TestClusterConductorWithK8s(base.TestCase):
             'worker_nodegroup_name': 'worker_ng',
             'post_install_manifest_url': '',
             'master_lb_allowed_cidrs': None,
-            'fixed_subnet_cidr': self.fixed_subnet_cidr
+            'fixed_subnet_cidr': self.fixed_subnet_cidr,
+            'octavia_provider': None,
+            'octavia_lb_algorithm': None,
+            'octavia_lb_healthcheck': None,
         }
         self.assertEqual(expected, definition)
         self.assertEqual(
@@ -794,6 +798,9 @@ class TestClusterConductorWithK8s(base.TestCase):
             'worker_nodegroup_name': 'worker_ng',
             'master_lb_allowed_cidrs': None,
             'fixed_subnet_cidr': self.fixed_subnet_cidr,
+            'octavia_provider': None,
+            'octavia_lb_algorithm': None,
+            'octavia_lb_healthcheck': None,
         }
         self.assertEqual(expected, definition)
         self.assertEqual(
@@ -909,6 +916,9 @@ class TestClusterConductorWithK8s(base.TestCase):
             'worker_nodegroup_name': 'worker_ng',
             'master_lb_allowed_cidrs': None,
             'fixed_subnet_cidr': self.fixed_subnet_cidr,
+            'octavia_provider': None,
+            'octavia_lb_algorithm': None,
+            'octavia_lb_healthcheck': None,
         }
         self.assertEqual(expected, definition)
         self.assertEqual(
@@ -1148,8 +1158,6 @@ class TestClusterConductorWithK8s(base.TestCase):
             'portal_network_cidr': '10.254.0.0/16',
             'project_id': 'project_id',
             'max_node_count': 2,
-            'master_image': 'image_id',
-            'minion_image': 'image_id',
             'keystone_auth_default_policy': self.keystone_auth_default_policy,
             'boot_volume_size': '60',
             'boot_volume_type': 'lvmdriver-1',
@@ -1160,6 +1168,9 @@ class TestClusterConductorWithK8s(base.TestCase):
             'post_install_manifest_url': '',
             'master_lb_allowed_cidrs': None,
             'fixed_subnet_cidr': self.fixed_subnet_cidr,
+            'octavia_provider': None,
+            'octavia_lb_algorithm': None,
+            'octavia_lb_healthcheck': None,
         }
         self.assertEqual(expected, definition)
         self.assertEqual(

@@ -13,23 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import namedtuple
+import tempfile
 from unittest import mock
 
-from oslo_serialization import jsonutils
+from requests_mock.contrib import fixture
 
 from magnum.common import exception
 from magnum.drivers.common import k8s_monitor
-from magnum.drivers.mesos_ubuntu_v1 import monitor as mesos_monitor
 from magnum.drivers.swarm_fedora_atomic_v1 import monitor as swarm_monitor
 from magnum.drivers.swarm_fedora_atomic_v2 import monitor as swarm_v2_monitor
 from magnum import objects
 from magnum.objects import fields as m_fields
 from magnum.tests import base
 from magnum.tests.unit.db import utils
-
-NODE_STATUS_CONDITION = namedtuple('Condition',
-                                   ['type', 'status'])
 
 
 class MonitorsTestCase(base.TestCase):
@@ -47,6 +43,7 @@ class MonitorsTestCase(base.TestCase):
 
     def setUp(self):
         super(MonitorsTestCase, self).setUp()
+        self.requests_mock = self.useFixture(fixture.Fixture())
         cluster = utils.get_test_cluster(node_addresses=['1.2.3.4'],
                                          api_address='https://5.6.7.8:2376',
                                          master_addresses=['10.0.0.6'],
@@ -66,8 +63,6 @@ class MonitorsTestCase(base.TestCase):
         self.v2_monitor = swarm_v2_monitor.SwarmMonitor(self.context,
                                                         self.cluster)
         self.k8s_monitor = k8s_monitor.K8sMonitor(self.context, self.cluster)
-        self.mesos_monitor = mesos_monitor.MesosMonitor(self.context,
-                                                        self.cluster)
         p = mock.patch('magnum.drivers.swarm_fedora_atomic_v1.monitor.'
                        'SwarmMonitor.metrics_spec',
                        new_callable=mock.PropertyMock)
@@ -233,24 +228,50 @@ class MonitorsTestCase(base.TestCase):
         mem_util = self.v2_monitor.compute_memory_util()
         self.assertEqual(0, mem_util)
 
-    @mock.patch('magnum.conductor.k8s_api.create_k8s_api')
-    def test_k8s_monitor_pull_data_success(self, mock_k8s_api):
-        mock_nodes = mock.MagicMock()
-        mock_node = mock.MagicMock()
-        mock_node.status = mock.MagicMock()
-        mock_node.status.capacity = {'memory': '2000Ki', 'cpu': '1'}
-        mock_nodes.items = [mock_node]
-        mock_k8s_api.return_value.list_node.return_value = (
-            mock_nodes)
-        mock_pods = mock.MagicMock()
-        mock_pod = mock.MagicMock()
-        mock_pod.spec = mock.MagicMock()
-        mock_container = mock.MagicMock()
-        mock_container.resources = mock.MagicMock()
-        mock_container.resources.limits = "{'memory': '100Mi', 'cpu': '500m'}"
-        mock_pod.spec.containers = [mock_container]
-        mock_pods.items = [mock_pod]
-        mock_k8s_api.return_value.list_namespaced_pod.return_value = mock_pods
+    @mock.patch('magnum.conductor.k8s_api.create_client_files')
+    def test_k8s_monitor_pull_data_success(self, mock_create_client_files):
+        mock_create_client_files.return_value = (
+            tempfile.NamedTemporaryFile(),
+            tempfile.NamedTemporaryFile(),
+            tempfile.NamedTemporaryFile()
+        )
+
+        self.requests_mock.register_uri(
+            'GET',
+            f"{self.cluster.api_address}/api/v1/nodes",
+            json={
+                'items': [
+                    {
+                        'status': {
+                            'capacity': {'memory': '2000Ki', 'cpu': '1'}
+                        }
+                    }
+                ]
+            },
+        )
+
+        self.requests_mock.register_uri(
+            'GET',
+            f"{self.cluster.api_address}/api/v1/namespaces/default/pods",
+            json={
+                'items': [
+                    {
+                        'spec': {
+                            'containers': [
+                                {
+                                    'resources': {
+                                        'limits': {
+                                            'memory': '100Mi',
+                                            'cpu': '500m'
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        )
 
         self.k8s_monitor.pull_data()
         self.assertEqual(self.k8s_monitor.data['nodes'],
@@ -326,138 +347,41 @@ class MonitorsTestCase(base.TestCase):
         cpu_util = self.k8s_monitor.compute_cpu_util()
         self.assertEqual(0, cpu_util)
 
-    def _test_mesos_monitor_pull_data(
-            self, mock_url_get, state_json, expected_mem_total,
-            expected_mem_used, expected_cpu_total, expected_cpu_used):
-        state_json = jsonutils.dumps(state_json)
-        mock_url_get.return_value = state_json
-        self.mesos_monitor.pull_data()
-        self.assertEqual(self.mesos_monitor.data['mem_total'],
-                         expected_mem_total)
-        self.assertEqual(self.mesos_monitor.data['mem_used'],
-                         expected_mem_used)
-        self.assertEqual(self.mesos_monitor.data['cpu_total'],
-                         expected_cpu_total)
-        self.assertEqual(self.mesos_monitor.data['cpu_used'],
-                         expected_cpu_used)
+    @mock.patch('magnum.conductor.k8s_api.create_client_files')
+    def test_k8s_monitor_health_healthy(self, mock_create_client_files):
+        mock_create_client_files.return_value = (
+            tempfile.NamedTemporaryFile(),
+            tempfile.NamedTemporaryFile(),
+            tempfile.NamedTemporaryFile()
+        )
 
-    @mock.patch('magnum.objects.NodeGroup.list')
-    @mock.patch('magnum.common.urlfetch.get')
-    def test_mesos_monitor_pull_data_success(self, mock_url_get,
-                                             mock_ng_list):
-        mock_ng_list.return_value = self.nodegroups
-        state_json = {
-            'leader': 'master@10.0.0.6:5050',
-            'pid': 'master@10.0.0.6:5050',
-            'slaves': [{
-                'resources': {
-                    'mem': 100,
-                    'cpus': 1,
-                },
-                'used_resources': {
-                    'mem': 50,
-                    'cpus': 0.2,
-                }
-            }]
-        }
-        self._test_mesos_monitor_pull_data(mock_url_get, state_json,
-                                           100, 50, 1, 0.2)
+        self.requests_mock.register_uri(
+            'GET',
+            f"{self.cluster.api_address}/api/v1/nodes",
+            json={
+                'items': [
+                    {
+                        'metadata': {
+                            'name': 'k8s-cluster-node-0'
+                        },
+                        'status': {
+                            'conditions': [
+                                {
+                                    'type': 'Ready',
+                                    'status': 'True',
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        )
 
-    @mock.patch('magnum.objects.NodeGroup.list')
-    @mock.patch('magnum.common.urlfetch.get')
-    def test_mesos_monitor_pull_data_success_not_leader(self, mock_url_get,
-                                                        mock_ng_list):
-        mock_ng_list.return_value = self.nodegroups
-        state_json = {
-            'leader': 'master@10.0.0.6:5050',
-            'pid': 'master@1.1.1.1:5050',
-            'slaves': []
-        }
-        self._test_mesos_monitor_pull_data(mock_url_get, state_json,
-                                           0, 0, 0, 0)
-
-    @mock.patch('magnum.objects.NodeGroup.list')
-    @mock.patch('magnum.common.urlfetch.get')
-    def test_mesos_monitor_pull_data_success_no_master(self, mock_url_get,
-                                                       mock_ng_list):
-        mock_ng_list.return_value = []
-        self._test_mesos_monitor_pull_data(mock_url_get, {}, 0, 0, 0, 0)
-
-    def test_mesos_monitor_get_metric_names(self):
-        mesos_metric_spec = ('magnum.drivers.mesos_ubuntu_v1.monitor.'
-                             'MesosMonitor.metrics_spec')
-        with mock.patch(mesos_metric_spec,
-                        new_callable=mock.PropertyMock) as mock_mesos_metric:
-            mock_mesos_metric.return_value = self.test_metrics_spec
-            names = self.mesos_monitor.get_metric_names()
-            self.assertEqual(sorted(['metric1', 'metric2']), sorted(names))
-
-    def test_mesos_monitor_get_metric_unit(self):
-        mesos_metric_spec = ('magnum.drivers.mesos_ubuntu_v1.monitor.'
-                             'MesosMonitor.metrics_spec')
-        with mock.patch(mesos_metric_spec,
-                        new_callable=mock.PropertyMock) as mock_mesos_metric:
-            mock_mesos_metric.return_value = self.test_metrics_spec
-            unit = self.mesos_monitor.get_metric_unit('metric1')
-            self.assertEqual('metric1_unit', unit)
-
-    def test_mesos_monitor_compute_memory_util(self):
-        test_data = {
-            'mem_total': 100,
-            'mem_used': 50
-        }
-        self.mesos_monitor.data = test_data
-        mem_util = self.mesos_monitor.compute_memory_util()
-        self.assertEqual(50, mem_util)
-
-        test_data = {
-            'mem_total': 0,
-            'pods': 0,
-        }
-        self.mesos_monitor.data = test_data
-        mem_util = self.mesos_monitor.compute_memory_util()
-        self.assertEqual(0, mem_util)
-
-        test_data = {
-            'mem_total': 100,
-            'mem_used': 0,
-            'pods': 0,
-        }
-        self.mesos_monitor.data = test_data
-        mem_util = self.mesos_monitor.compute_memory_util()
-        self.assertEqual(0, mem_util)
-
-    def test_mesos_monitor_compute_cpu_util(self):
-        test_data = {
-            'cpu_total': 1,
-            'cpu_used': 0.2,
-        }
-        self.mesos_monitor.data = test_data
-        cpu_util = self.mesos_monitor.compute_cpu_util()
-        self.assertEqual(20, cpu_util)
-
-        test_data = {
-            'cpu_total': 100,
-            'cpu_used': 0,
-        }
-        self.mesos_monitor.data = test_data
-        cpu_util = self.mesos_monitor.compute_cpu_util()
-        self.assertEqual(0, cpu_util)
-
-    @mock.patch('magnum.conductor.k8s_api.create_k8s_api')
-    def test_k8s_monitor_health_healthy(self, mock_k8s_api):
-        mock_nodes = mock.MagicMock()
-        mock_node = mock.MagicMock()
-        mock_api_client = mock.MagicMock()
-        mock_node.status = mock.MagicMock()
-        mock_node.metadata.name = 'k8s-cluster-node-0'
-        mock_node.status.conditions = [NODE_STATUS_CONDITION(type='Ready',
-                                                             status='True')]
-        mock_nodes.items = [mock_node]
-        mock_k8s_api.return_value.list_node.return_value = (
-            mock_nodes)
-        mock_k8s_api.return_value.api_client = mock_api_client
-        mock_api_client.call_api.return_value = ('ok', None, None)
+        self.requests_mock.register_uri(
+            'GET',
+            f"{self.cluster.api_address}/healthz",
+            text="ok",
+        )
 
         self.k8s_monitor.poll_health_status()
         self.assertEqual(self.k8s_monitor.data['health_status'],
@@ -465,21 +389,41 @@ class MonitorsTestCase(base.TestCase):
         self.assertEqual(self.k8s_monitor.data['health_status_reason'],
                          {'api': 'ok', 'k8s-cluster-node-0.Ready': True})
 
-    @mock.patch('magnum.conductor.k8s_api.create_k8s_api')
-    def test_k8s_monitor_health_unhealthy_api(self, mock_k8s_api):
-        mock_nodes = mock.MagicMock()
-        mock_node = mock.MagicMock()
-        mock_api_client = mock.MagicMock()
-        mock_node.status = mock.MagicMock()
-        mock_node.metadata.name = 'k8s-cluster-node-0'
-        mock_node.status.conditions = [NODE_STATUS_CONDITION(type='Ready',
-                                                             status='True')]
-        mock_nodes.items = [mock_node]
-        mock_k8s_api.return_value.list_node.return_value = (
-            mock_nodes)
-        mock_k8s_api.return_value.api_client = mock_api_client
-        mock_api_client.call_api.side_effect = exception.MagnumException(
-            message='failed')
+    @mock.patch('magnum.conductor.k8s_api.create_client_files')
+    def test_k8s_monitor_health_unhealthy_api(self, mock_create_client_files):
+        mock_create_client_files.return_value = (
+            tempfile.NamedTemporaryFile(),
+            tempfile.NamedTemporaryFile(),
+            tempfile.NamedTemporaryFile()
+        )
+
+        self.requests_mock.register_uri(
+            'GET',
+            f"{self.cluster.api_address}/api/v1/nodes",
+            json={
+                'items': [
+                    {
+                        'metadata': {
+                            'name': 'k8s-cluster-node-0'
+                        },
+                        'status': {
+                            'conditions': [
+                                {
+                                    'type': 'Ready',
+                                    'status': 'True',
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        )
+
+        self.requests_mock.register_uri(
+            'GET',
+            f"{self.cluster.api_address}/healthz",
+            exc=exception.MagnumException(message='failed'),
+        )
 
         self.k8s_monitor.poll_health_status()
         self.assertEqual(self.k8s_monitor.data['health_status'],
@@ -487,53 +431,106 @@ class MonitorsTestCase(base.TestCase):
         self.assertEqual(self.k8s_monitor.data['health_status_reason'],
                          {'api': 'failed'})
 
-    @mock.patch('magnum.conductor.k8s_api.create_k8s_api')
-    def test_k8s_monitor_health_unhealthy_node(self, mock_k8s_api):
-        mock_nodes = mock.MagicMock()
-        mock_api_client = mock.MagicMock()
+    @mock.patch('magnum.conductor.k8s_api.create_client_files')
+    def test_k8s_monitor_health_unhealthy_node(self, mock_create_client_files):
+        mock_create_client_files.return_value = (
+            tempfile.NamedTemporaryFile(),
+            tempfile.NamedTemporaryFile(),
+            tempfile.NamedTemporaryFile()
+        )
 
-        mock_node0 = mock.MagicMock()
-        mock_node0.status = mock.MagicMock()
-        mock_node0.metadata.name = 'k8s-cluster-node-0'
-        mock_node0.status.conditions = [NODE_STATUS_CONDITION(type='Ready',
-                                                              status='False')]
-        mock_node1 = mock.MagicMock()
-        mock_node1.status = mock.MagicMock()
-        mock_node1.metadata.name = 'k8s-cluster-node-1'
-        mock_node1.status.conditions = [NODE_STATUS_CONDITION(type='Ready',
-                                                              status='True')]
+        self.requests_mock.register_uri(
+            'GET',
+            f"{self.cluster.api_address}/api/v1/nodes",
+            json={
+                'items': [
+                    {
+                        'metadata': {
+                            'name': 'k8s-cluster-node-0'
+                        },
+                        'status': {
+                            'conditions': [
+                                {
+                                    'type': 'Ready',
+                                    'status': 'False',
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        'metadata': {
+                            'name': 'k8s-cluster-node-1'
+                        },
+                        'status': {
+                            'conditions': [
+                                {
+                                    'type': 'Ready',
+                                    'status': 'True',
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        )
 
-        mock_nodes.items = [mock_node0, mock_node1]
-        mock_k8s_api.return_value.list_node.return_value = (
-            mock_nodes)
-        mock_k8s_api.return_value.api_client = mock_api_client
-        mock_api_client.call_api.return_value = ('ok', None, None)
+        self.requests_mock.register_uri(
+            'GET',
+            f"{self.cluster.api_address}/healthz",
+            text="ok",
+        )
 
         self.k8s_monitor.poll_health_status()
         self.assertEqual(self.k8s_monitor.data['health_status'],
                          m_fields.ClusterHealthStatus.UNHEALTHY)
         self.assertEqual(self.k8s_monitor.data['health_status_reason'],
                          {'api': 'ok', 'k8s-cluster-node-0.Ready': False,
-                          'api': 'ok', 'k8s-cluster-node-1.Ready': True})
+                          'k8s-cluster-node-1.Ready': True})
 
-    @mock.patch('magnum.conductor.k8s_api.create_k8s_api')
-    def test_k8s_monitor_health_unreachable_cluster(self, mock_k8s_api):
-        mock_nodes = mock.MagicMock()
-        mock_node = mock.MagicMock()
-        mock_node.status = mock.MagicMock()
-        mock_nodes.items = [mock_node]
+    @mock.patch('magnum.conductor.k8s_api.create_client_files')
+    def test_k8s_monitor_health_unreachable_cluster(
+            self, mock_create_client_files):
+        mock_create_client_files.return_value = (
+            tempfile.NamedTemporaryFile(),
+            tempfile.NamedTemporaryFile(),
+            tempfile.NamedTemporaryFile()
+        )
+
+        self.requests_mock.register_uri(
+            'GET',
+            f"{self.cluster.api_address}/api/v1/nodes",
+            json={
+                'items': [
+                    {}
+                ]
+            }
+        )
+
         self.k8s_monitor.cluster.floating_ip_enabled = False
 
         self.k8s_monitor.poll_health_status()
         self.assertEqual(self.k8s_monitor.data['health_status'],
                          m_fields.ClusterHealthStatus.UNKNOWN)
 
-    @mock.patch('magnum.conductor.k8s_api.create_k8s_api')
-    def test_k8s_monitor_health_unreachable_with_master_lb(self, mock_k8s_api):
-        mock_nodes = mock.MagicMock()
-        mock_node = mock.MagicMock()
-        mock_node.status = mock.MagicMock()
-        mock_nodes.items = [mock_node]
+    @mock.patch('magnum.conductor.k8s_api.create_client_files')
+    def test_k8s_monitor_health_unreachable_with_master_lb(
+            self, mock_create_client_files):
+        mock_create_client_files.return_value = (
+            tempfile.NamedTemporaryFile(),
+            tempfile.NamedTemporaryFile(),
+            tempfile.NamedTemporaryFile()
+        )
+
+        self.requests_mock.register_uri(
+            'GET',
+            f"{self.cluster.api_address}/api/v1/nodes",
+            json={
+                'items': [
+                    {}
+                ]
+            }
+        )
+
         cluster = self.k8s_monitor.cluster
         cluster.floating_ip_enabled = True
         cluster.master_lb_enabled = True

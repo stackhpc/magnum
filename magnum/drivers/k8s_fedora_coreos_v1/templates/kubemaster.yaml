@@ -216,6 +216,10 @@ parameters:
     type: string
     description: Subnet from which to allocate fixed addresses.
 
+  fixed_subnet_cidr:
+    type: string
+    description: network range for fixed ip network
+
   network_driver:
     type: string
     description: network driver to use for instantiating container networks
@@ -430,6 +434,23 @@ parameters:
       whether or not to use Octavia for LoadBalancer type service.
     default: False
 
+  octavia_provider:
+    type: string
+    description: >
+      Octavia provider driver to use for LoadBalancer type service.
+
+  octavia_lb_algorithm:
+    type: string
+    default: ROUND_ROBIN
+    description: >
+      Octavia lb algorithm to use for LoadBalancer type service.
+
+  octavia_lb_healthcheck:
+    type: boolean
+    default: True
+    description: >
+      Octavia lb healthcheck.
+
   kube_service_account_key:
     type: string
     hidden: true
@@ -599,6 +620,11 @@ parameters:
   csi_node_driver_registrar_tag:
     type: string
     description: tag of csi node driver registrar
+
+  csi_liveness_probe_tag:
+    type: string
+    description: >
+      Tag of liveness-probe for cinder csi.
 
   node_problem_detector_tag:
     type: string
@@ -797,7 +823,9 @@ resources:
                   "$PASSWORD": {get_param: password}
                   "$CLUSTER_NETWORK": {get_param: fixed_network}
                   "$CLUSTER_NETWORK_NAME": {get_param: fixed_network_name}
+                  "$CLUSTER_SUBNET_CIDR": {get_param: fixed_subnet_cidr}
                   "$CLUSTER_SUBNET": {get_param: fixed_subnet}
+                  "$CLUSTER_SUBNET_CIDR": {get_param: fixed_subnet_cidr}
                   "$TLS_DISABLED": {get_param: tls_disabled}
                   "$TRAEFIK_INGRESS_CONTROLLER_TAG": {get_param: traefik_ingress_controller_tag}
                   "$KUBE_DASHBOARD_ENABLED": {get_param: kube_dashboard_enabled}
@@ -843,6 +871,9 @@ resources:
                   "$KUBEPROXY_OPTIONS": {get_param: kubeproxy_options}
                   "$KUBESCHEDULER_OPTIONS": {get_param: kubescheduler_options}
                   "$OCTAVIA_ENABLED": {get_param: octavia_enabled}
+                  "$OCTAVIA_PROVIDER": {get_param: octavia_provider}
+                  "$OCTAVIA_LB_ALGORITHM": {get_param: octavia_lb_algorithm}
+                  "$OCTAVIA_LB_HEALTHCHECK": {get_param: octavia_lb_healthcheck}
                   "$KUBE_SERVICE_ACCOUNT_KEY": {get_param: kube_service_account_key}
                   "$KUBE_SERVICE_ACCOUNT_PRIVATE_KEY": {get_param: kube_service_account_private_key}
                   "$PROMETHEUS_TAG": {get_param: prometheus_tag}
@@ -884,6 +915,7 @@ resources:
                   "$CSI_SNAPSHOTTER_TAG": {get_param: csi_snapshotter_tag}
                   "$CSI_RESIZER_TAG": {get_param: csi_resizer_tag}
                   "$CSI_NODE_DRIVER_REGISTRAR_TAG": {get_param: csi_node_driver_registrar_tag}
+                  "$CSI_LIVENESS_PROBE_TAG":  {get_param: csi_liveness_probe_tag}
                   "$DRAINO_TAG": {get_param: draino_tag}
                   "$AUTOSCALER_TAG": {get_param: autoscaler_tag}
                   "$MIN_NODE_COUNT": {get_param: min_node_count}

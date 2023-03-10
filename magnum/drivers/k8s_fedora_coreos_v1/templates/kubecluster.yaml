@@ -93,6 +93,10 @@ parameters:
     description: uuid/name of an existing subnet to use to provision machines
     default: ""
 
+  fixed_subnet_cidr:
+    type: string
+    description: network range for fixed ip network
+
   master_image:
     type: string
     description: glance image used to boot the server
@@ -135,7 +139,7 @@ parameters:
   metrics_server_chart_tag:
     type: string
     description: tag of the stable/metrics-server chart to install
-    default: v2.8.8
+    default: v3.7.0
 
   minion_flavor:
     type: string
@@ -449,35 +453,35 @@ parameters:
   hyperkube_prefix:
     type: string
     description: prefix to use for hyperkube images
-    default: k8s.gcr.io/
+    default: docker.io/rancher/
 
   kube_tag:
     type: string
     description:
       tag of the k8s containers used to provision the kubernetes cluster
       https://github.com/kubernetes/kubernetes/releases
-    default: v1.18.16
+    default: v1.23.3-rancher1
 
   master_kube_tag:
     type: string
     description:
       tag of the k8s containers used to provision the kubernetes cluster
       https://github.com/kubernetes/kubernetes/releases
-    default: v1.18.16
+    default: v1.23.3-rancher1
 
   minion_kube_tag:
     type: string
     description:
       tag of the k8s containers used to provision the kubernetes cluster
       https://github.com/kubernetes/kubernetes/releases
-    default: v1.18.16
+    default: v1.23.3-rancher1
 
   cloud_provider_tag:
     type: string
     description:
       tag of the k8scloudprovider/openstack-cloud-controller-manager
       https://hub.docker.com/r/k8scloudprovider/openstack-cloud-controller-manager/tags/
-    default: v1.18.0
+    default: v1.23.1
 
   cloud_provider_enabled:
     type: boolean
@@ -496,7 +500,7 @@ parameters:
   flannel_tag:
     type: string
     description: tag of the flannel container
-    default: v0.12.0-amd64
+    default: v0.15.1
 
   flannel_cni_tag:
     type: string
@@ -578,7 +582,7 @@ parameters:
   calico_tag:
     type: string
     description: tag of the calico containers used to provision the calico node
-    default: v3.13.1
+    default: v3.21.2
 
   calico_kube_controllers_tag:
     type: string
@@ -655,6 +659,24 @@ parameters:
     description: >
       whether or not to use Octavia for LoadBalancer type service.
     default: False
+
+  octavia_provider:
+    type: string
+    default: amphora
+    description: >
+      Octavia provider driver to use for LoadBalancer type service.
+
+  octavia_lb_algorithm:
+    type: string
+    default: ROUND_ROBIN
+    description: >
+      Octavia lb algorithm to use for LoadBalancer type service
+
+  octavia_lb_healthcheck:
+    type: boolean
+    description: >
+      if true, enable Octavia load balancer healthcheck
+    default: true
 
   kube_service_account_key:
     type: string
@@ -844,32 +866,38 @@ parameters:
     description: tag of cinder csi plugin
       tag of the k8scloudprovider/cinder-csi-plugin container
       https://hub.docker.com/r/k8scloudprovider/cinder-csi-plugin/tags/
-    default: v1.18.0
+    default: v1.23.0
 
   csi_attacher_tag:
     type: string
     description: tag of csi attacher
-    default: v2.0.0
+    default: v3.3.0
 
   csi_provisioner_tag:
     type: string
     description: tag of csi provisioner
-    default: v1.4.0
+    default: v3.0.0
 
   csi_snapshotter_tag:
     type: string
     description: tag of csi snapshotter
-    default: v1.2.2
+    default: v4.2.1
 
   csi_resizer_tag:
     type: string
     description: tag of csi resizer
-    default: v0.3.0
+    default: v1.3.0
 
   csi_node_driver_registrar_tag:
     type: string
     description: tag of csi node driver registrar
-    default: v1.1.0
+    default: v2.4.0
+
+  csi_liveness_probe_tag:
+    type: string
+    description: tag of cinder csi liveness probe
+      tag of the k8s.gcr.io/sig-storage/liveness-probe container
+    default: v2.5.0
 
   node_problem_detector_tag:
     type: string
@@ -884,7 +912,7 @@ parameters:
   nginx_ingress_controller_chart_tag:
     type: string
     description: nginx ingress controller helm chart tag
-    default: v1.36.3
+    default: 4.0.17
 
   draino_tag:
     type: string
@@ -1017,6 +1045,9 @@ resources:
       protocol: {get_param: loadbalancing_protocol}
       port: {get_param: kubernetes_port}
       allowed_cidrs: {get_param: master_lb_allowed_cidrs}
+      octavia_provider: {get_param: octavia_provider}
+      octavia_lb_algorithm: {get_param: octavia_lb_algorithm}
+      octavia_lb_healthcheck: {get_param: octavia_lb_healthcheck}
 
   etcd_lb:
     condition: create_cluster_resources
@@ -1026,6 +1057,9 @@ resources:
       protocol: {get_param: loadbalancing_protocol}
       port: 2379
       allowed_cidrs: {get_param: master_lb_allowed_cidrs}
+      octavia_provider: {get_param: octavia_provider}
+      octavia_lb_algorithm: {get_param: octavia_lb_algorithm}
+      octavia_lb_healthcheck: {get_param: octavia_lb_healthcheck}
 
   ######################################################################
   #
@@ -1127,6 +1161,25 @@ resources:
       port_range_max: 65535
       security_group: {get_resource: secgroup_kube_minion}
       remote_group: {get_resource: secgroup_kube_minion}
+  # allow traffic between PODs for ML2/OVN
+  secgroup_rule_tcp_kube_minion_pods_cidr:
+    condition: create_cluster_resources
+    type: OS::Neutron::SecurityGroupRule
+    properties:
+      protocol: tcp
+      port_range_min: 1
+      port_range_max: 65535
+      remote_ip_prefix: {get_param: pods_network_cidr}
+      security_group: {get_resource: secgroup_kube_minion}
+  secgroup_rule_udp_kube_minion_pods_cidr:
+    condition: create_cluster_resources
+    type: OS::Neutron::SecurityGroupRule
+    properties:
+      protocol: udp
+      port_range_min: 1
+      port_range_max: 65535
+      remote_ip_prefix: {get_param: pods_network_cidr}
+      security_group: {get_resource: secgroup_kube_minion}
 
   ######################################################################
   #
@@ -1242,6 +1295,7 @@ resources:
           fixed_network: {get_attr: [network, fixed_network]}
           fixed_network_name: {get_param: fixed_network_name}
           fixed_subnet: {get_attr: [network, fixed_subnet]}
+          fixed_subnet_cidr: {get_param: fixed_subnet_cidr}
           api_pool_id: {get_attr: [api_lb, pool_id]}
           etcd_pool_id: {get_attr: [etcd_lb, pool_id]}
           username: {get_param: username}
@@ -1293,6 +1347,9 @@ resources:
           kubecontroller_options: {get_param: kubecontroller_options}
           kubescheduler_options: {get_param: kubescheduler_options}
           octavia_enabled: {get_param: octavia_enabled}
+          octavia_provider: {get_param: octavia_provider}
+          octavia_lb_algorithm: {get_param: octavia_lb_algorithm}
+          octavia_lb_healthcheck: {get_param: octavia_lb_healthcheck}
           kube_service_account_key: {get_param: kube_service_account_key}
           kube_service_account_private_key: {get_param: kube_service_account_private_key}
           prometheus_tag: {get_param: prometheus_tag}
@@ -1333,6 +1390,7 @@ resources:
           csi_snapshotter_tag: {get_param: csi_snapshotter_tag}
           csi_resizer_tag: {get_param: csi_resizer_tag}
           csi_node_driver_registrar_tag: {get_param: csi_node_driver_registrar_tag}
+          csi_liveness_probe_tag: {get_param: csi_liveness_probe_tag}
           draino_tag: {get_param: draino_tag}
           autoscaler_tag: {get_param: autoscaler_tag}
           min_node_count: {get_param: min_node_count}
@@ -1514,6 +1572,9 @@ resources:
           kubelet_options: {get_param: kubelet_options}
           kubeproxy_options: {get_param: kubeproxy_options}
           octavia_enabled: {get_param: octavia_enabled}
+          octavia_provider: {get_param: octavia_provider}
+          octavia_lb_algorithm: {get_param: octavia_lb_algorithm}
+          octavia_lb_healthcheck: {get_param: octavia_lb_healthcheck}
           heat_container_agent_tag: {get_param: heat_container_agent_tag}
           auto_healing_enabled: {get_param: auto_healing_enabled}
           npd_enabled: {get_param: npd_enabled}

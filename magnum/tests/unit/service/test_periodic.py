@@ -17,6 +17,7 @@ from unittest import mock
 from oslo_utils import uuidutils
 
 from magnum.common import context
+from magnum.common import exception
 from magnum.common.rpc_service import CONF
 from magnum.db.sqlalchemy import api as dbapi
 from magnum.drivers.common import driver
@@ -189,6 +190,32 @@ class PeriodicTestCase(base.TestCase):
         self.mock_driver.update_cluster_status.side_effect = (
             _mock_update_status)
 
+    @mock.patch('magnum.drivers.common.driver.Driver.get_driver_for_cluster')
+    def test_update_status_non_trusts_error(self, mock_get_driver):
+        mock_get_driver.return_value = self.mock_driver
+        trust_ex = ("Unknown Keystone error")
+        self.mock_driver.update_cluster_status.side_effect = \
+            exception.AuthorizationFailure(client='keystone', message=trust_ex)
+        self.assertRaises(
+            exception.AuthorizationFailure,
+            periodic.ClusterUpdateJob(
+                self.context, self.cluster1).update_status
+        )
+        self.assertEqual(1, self.mock_driver.update_cluster_status.call_count)
+
+    @mock.patch('magnum.drivers.common.driver.Driver.get_driver_for_cluster')
+    def test_update_status_trusts_not_found(self, mock_get_driver):
+        mock_get_driver.return_value = self.mock_driver
+        trust_ex = ("Could not find trust: %s" % self.cluster1.trust_id)
+        self.mock_driver.update_cluster_status.side_effect = \
+            exception.AuthorizationFailure(client='keystone', message=trust_ex)
+        self.assertRaises(
+            exception.AuthorizationFailure,
+            periodic.ClusterUpdateJob(
+                self.context, self.cluster1).update_status
+        )
+        self.assertEqual(2, self.mock_driver.update_cluster_status.call_count)
+
     @mock.patch('oslo_service.loopingcall.FixedIntervalLoopingCall',
                 new=fakes.FakeLoopingCall)
     @mock.patch('magnum.drivers.common.driver.Driver.get_driver_for_cluster')
@@ -295,152 +322,6 @@ class PeriodicTestCase(base.TestCase):
             self.assertEqual(2, mock_db_destroy.call_count)
             notifications = fake_notifier.NOTIFICATIONS
             self.assertEqual(5, len(notifications))
-
-    @mock.patch('magnum.conductor.monitors.create_monitor')
-    @mock.patch('magnum.objects.Cluster.list')
-    @mock.patch('magnum.common.rpc.get_notifier')
-    @mock.patch('magnum.common.context.make_admin_context')
-    def test_send_cluster_metrics(self, mock_make_admin_context,
-                                  mock_get_notifier, mock_cluster_list,
-                                  mock_create_monitor):
-        """Test if RPC notifier receives the expected message"""
-        CONF.set_override('send_cluster_metrics', True, group='drivers')
-        mock_make_admin_context.return_value = self.context
-        notifier = mock.MagicMock()
-        mock_get_notifier.return_value = notifier
-        mock_cluster_list.return_value = [self.cluster1, self.cluster2,
-                                          self.cluster3, self.cluster4]
-        self.cluster4.status = cluster_status.CREATE_COMPLETE
-        monitor = mock.MagicMock()
-        monitor.get_metric_names.return_value = ['metric1', 'metric2']
-        monitor.compute_metric_value.return_value = 30
-        monitor.get_metric_unit.return_value = '%'
-        mock_create_monitor.return_value = monitor
-
-        periodic.MagnumPeriodicTasks(CONF)._send_cluster_metrics(self.context)
-
-        expected_event_type = 'magnum.cluster.metrics.update'
-        expected_metrics = [
-            {
-                'name': 'metric1',
-                'value': 30,
-                'unit': '%',
-            },
-            {
-                'name': 'metric2',
-                'value': 30,
-                'unit': '%',
-            },
-        ]
-        expected_msg = {
-            'user_id': self.cluster4.user_id,
-            'project_id': self.cluster4.project_id,
-            'resource_id': self.cluster4.uuid,
-            'metrics': expected_metrics
-        }
-
-        self.assertEqual(1, mock_create_monitor.call_count)
-        notifier.info.assert_called_once_with(
-            self.context, expected_event_type, expected_msg)
-
-    @mock.patch('magnum.conductor.monitors.create_monitor')
-    @mock.patch('magnum.objects.Cluster.list')
-    @mock.patch('magnum.common.rpc.get_notifier')
-    @mock.patch('magnum.common.context.make_admin_context')
-    def test_send_cluster_metrics_compute_metric_raise(
-            self, mock_make_admin_context, mock_get_notifier,
-            mock_cluster_list, mock_create_monitor):
-        CONF.set_override('send_cluster_metrics', True, group='drivers')
-        mock_make_admin_context.return_value = self.context
-        notifier = mock.MagicMock()
-        mock_get_notifier.return_value = notifier
-        mock_cluster_list.return_value = [self.cluster4]
-        self.cluster4.status = cluster_status.CREATE_COMPLETE
-        monitor = mock.MagicMock()
-        monitor.get_metric_names.return_value = ['metric1', 'metric2']
-        monitor.compute_metric_value.side_effect = Exception(
-            "error on computing metric")
-        mock_create_monitor.return_value = monitor
-
-        periodic.MagnumPeriodicTasks(CONF)._send_cluster_metrics(self.context)
-
-        expected_event_type = 'magnum.cluster.metrics.update'
-        expected_msg = {
-            'user_id': self.cluster4.user_id,
-            'project_id': self.cluster4.project_id,
-            'resource_id': self.cluster4.uuid,
-            'metrics': []
-        }
-        self.assertEqual(1, mock_create_monitor.call_count)
-        notifier.info.assert_called_once_with(
-            self.context, expected_event_type, expected_msg)
-
-    @mock.patch('magnum.conductor.monitors.create_monitor')
-    @mock.patch('magnum.objects.Cluster.list')
-    @mock.patch('magnum.common.rpc.get_notifier')
-    @mock.patch('magnum.common.context.make_admin_context')
-    def test_send_cluster_metrics_pull_data_raise(
-            self, mock_make_admin_context, mock_get_notifier,
-            mock_cluster_list, mock_create_monitor):
-        CONF.set_override('send_cluster_metrics', True, group='drivers')
-        mock_make_admin_context.return_value = self.context
-        notifier = mock.MagicMock()
-        mock_get_notifier.return_value = notifier
-        mock_cluster_list.return_value = [self.cluster4]
-        self.cluster4.status = cluster_status.CREATE_COMPLETE
-        monitor = mock.MagicMock()
-        monitor.pull_data.side_effect = Exception("error on pulling data")
-        mock_create_monitor.return_value = monitor
-
-        periodic.MagnumPeriodicTasks(CONF)._send_cluster_metrics(self.context)
-
-        self.assertEqual(1, mock_create_monitor.call_count)
-        self.assertEqual(0, notifier.info.call_count)
-
-    @mock.patch('magnum.conductor.monitors.create_monitor')
-    @mock.patch('magnum.objects.Cluster.list')
-    @mock.patch('magnum.common.rpc.get_notifier')
-    @mock.patch('magnum.common.context.make_admin_context')
-    def test_send_cluster_metrics_monitor_none(
-            self, mock_make_admin_context, mock_get_notifier,
-            mock_cluster_list, mock_create_monitor):
-        CONF.set_override('send_cluster_metrics', True, group='drivers')
-        mock_make_admin_context.return_value = self.context
-        notifier = mock.MagicMock()
-        mock_get_notifier.return_value = notifier
-        mock_cluster_list.return_value = [self.cluster4]
-        self.cluster4.status = cluster_status.CREATE_COMPLETE
-        mock_create_monitor.return_value = None
-
-        periodic.MagnumPeriodicTasks(CONF)._send_cluster_metrics(self.context)
-
-        self.assertEqual(1, mock_create_monitor.call_count)
-        self.assertEqual(0, notifier.info.call_count)
-
-    @mock.patch('magnum.conductor.monitors.create_monitor')
-    @mock.patch('magnum.objects.Cluster.list')
-    @mock.patch('magnum.common.rpc.get_notifier')
-    @mock.patch('magnum.common.context.make_admin_context')
-    def test_send_cluster_metrics_disable_pull_data(
-            self, mock_make_admin_context, mock_get_notifier,
-            mock_cluster_list, mock_create_monitor):
-
-        mock_make_admin_context.return_value = self.context
-        notifier = mock.MagicMock()
-        mock_get_notifier.return_value = notifier
-        mock_cluster_list.return_value = [self.cluster1, self.cluster2,
-                                          self.cluster3, self.cluster4]
-        self.cluster4.status = cluster_status.CREATE_COMPLETE
-        monitor = mock.MagicMock()
-        monitor.get_metric_names.return_value = ['metric1', 'metric2']
-        monitor.compute_metric_value.return_value = 30
-        monitor.get_metric_unit.return_value = '%'
-        mock_create_monitor.return_value = monitor
-
-        periodic.MagnumPeriodicTasks(CONF)._send_cluster_metrics(self.context)
-
-        self.assertEqual(0, mock_create_monitor.call_count)
-        self.assertEqual(0, notifier.info.call_count)
 
     @mock.patch('oslo_service.loopingcall.FixedIntervalLoopingCall',
                 new=fakes.FakeLoopingCall)

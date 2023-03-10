@@ -120,8 +120,6 @@ function create_magnum_accounts {
         "container-infra" "Container Infrastructure Management Service")
     get_or_create_endpoint $magnum_service \
         "$REGION_NAME" \
-        "$MAGNUM_SERVICE_PROTOCOL://$MAGNUM_SERVICE_HOST/container-infra/v1" \
-        "$MAGNUM_SERVICE_PROTOCOL://$MAGNUM_SERVICE_HOST/container-infra/v1" \
         "$MAGNUM_SERVICE_PROTOCOL://$MAGNUM_SERVICE_HOST/container-infra/v1"
 
     # Create for Kubernetes Keystone auth
@@ -137,8 +135,9 @@ function create_magnum_conf {
     rm -f $MAGNUM_CONF
     HOSTNAME=`hostname`
     iniset $MAGNUM_CONF DEFAULT debug "$ENABLE_DEBUG_LOG_LEVEL"
-    iniset $MAGNUM_CONF DEFAULT transport_url $(get_transport_url)
     iniset $MAGNUM_CONF DEFAULT host "$HOSTNAME"
+
+    iniset_rpc_backend magnum $MAGNUM_CONF
 
     iniset $MAGNUM_CONF database connection `database_connection_url magnum`
     iniset $MAGNUM_CONF api host "$MAGNUM_SERVICE_HOST"

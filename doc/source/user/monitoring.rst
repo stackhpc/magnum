@@ -1,4 +1,4 @@
-As of this moment, monitoring is only supported for kubernetes clusters.
+.. _monitoring:
 
 Container Monitoring in Kubernetes
 ----------------------------------
@@ -52,6 +52,7 @@ _`metrics_server_chart_tag`
   Add metrics_server_chart_tag to select the version of the
   stable/metrics-server chart to install.
   Ussuri default: v2.8.8
+  Yoga default: v3.7.0
 
 _`prometheus_operator_chart_tag`
   Add prometheus_operator_chart_tag to select version of the
