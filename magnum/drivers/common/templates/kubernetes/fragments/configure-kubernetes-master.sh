@@ -187,7 +187,7 @@ ExecStart=/bin/bash -c '/usr/bin/podman run --name kubelet \\
     --pid host \\
     --network host \\
     --entrypoint /hyperkube \\
-    --volume /:/rootfs:ro \\
+    --volume /:/rootfs:rslave,ro \\
     --volume /etc/cni/net.d:/etc/cni/net.d:ro,z \\
     --volume /etc/kubernetes:/etc/kubernetes:ro,z \\
     --volume /usr/lib/os-release:/usr/lib/os-release:ro \\
@@ -454,7 +454,6 @@ if [ -f /etc/sysconfig/docker ] ; then
     sed -i -E 's/^OPTIONS=("|'"'"')/OPTIONS=\1'"${DOCKER_OPTIONS}"' /' /etc/sysconfig/docker
 fi
 
-KUBELET_ARGS="${KUBELET_ARGS} --network-plugin=cni --cni-conf-dir=/etc/cni/net.d --cni-bin-dir=/opt/cni/bin"
 KUBELET_ARGS="${KUBELET_ARGS} --register-with-taints=node-role.kubernetes.io/master=:NoSchedule"
 KUBELET_ARGS="${KUBELET_ARGS} --node-labels=magnum.openstack.org/role=${NODEGROUP_ROLE}"
 KUBELET_ARGS="${KUBELET_ARGS} --node-labels=magnum.openstack.org/nodegroup=${NODEGROUP_NAME}"
@@ -503,6 +502,8 @@ if [ ${CONTAINER_RUNTIME} = "containerd"  ] ; then
     KUBELET_ARGS="${KUBELET_ARGS} --container-runtime=remote"
     KUBELET_ARGS="${KUBELET_ARGS} --runtime-request-timeout=15m"
     KUBELET_ARGS="${KUBELET_ARGS} --container-runtime-endpoint=unix:///run/containerd/containerd.sock"
+else
+    KUBELET_ARGS="${KUBELET_ARGS} --network-plugin=cni --cni-conf-dir=/etc/cni/net.d --cni-bin-dir=/opt/cni/bin"
 fi
 
 if [ -z "${KUBE_NODE_IP}" ]; then

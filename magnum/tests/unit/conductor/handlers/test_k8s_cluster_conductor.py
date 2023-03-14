@@ -118,7 +118,6 @@ class TestClusterConductorWithK8s(base.TestCase):
                        'worker_volume_type': 'lvmdriver-2',
                        'boot_volume_size': '60'},
             'master_flavor_id': 'master_flavor_id',
-            'flavor_id': 'flavor_id',
             'project_id': 'project_id',
             'keystone_auth_default_policy': self.keystone_auth_default_policy,
             'fixed_network': 'fixed_network',
@@ -373,8 +372,6 @@ class TestClusterConductorWithK8s(base.TestCase):
             'portal_network_cidr': '10.254.0.0/16',
             'project_id': 'project_id',
             'max_node_count': 2,
-            'master_image': 'image_id',
-            'minion_image': 'image_id',
             'keystone_auth_default_policy': self.keystone_auth_default_policy,
             'boot_volume_size': '60',
             'boot_volume_type': 'lvmdriver-1',
@@ -537,8 +534,6 @@ class TestClusterConductorWithK8s(base.TestCase):
             'portal_network_cidr': '10.254.0.0/16',
             'project_id': 'project_id',
             'max_node_count': 2,
-            'master_image': 'image_id',
-            'minion_image': 'image_id',
             'keystone_auth_default_policy': self.keystone_auth_default_policy,
             'boot_volume_size': '60',
             'boot_volume_type': 'lvmdriver-1',
@@ -1178,8 +1173,6 @@ class TestClusterConductorWithK8s(base.TestCase):
             'portal_network_cidr': '10.254.0.0/16',
             'project_id': 'project_id',
             'max_node_count': 2,
-            'master_image': 'image_id',
-            'minion_image': 'image_id',
             'keystone_auth_default_policy': self.keystone_auth_default_policy,
             'boot_volume_size': '60',
             'boot_volume_type': 'lvmdriver-1',
@@ -1208,7 +1201,7 @@ class TestClusterConductorWithK8s(base.TestCase):
              '../../common/templates/environments/disable_lb_floating_ip.yaml',
              ],
             env_files)
-        reqget.assert_called_once_with('http://etcd/test?size=1')
+        reqget.assert_called_once_with('http://etcd/test?size=1', timeout=60)
 
     @patch('magnum.common.short_id.generate_id')
     @patch('heatclient.common.template_utils.get_template_contents')
