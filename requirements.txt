@@ -56,4 +56,4 @@ stevedore>=3.3.0 # Apache-2.0
 taskflow>=2.16.0 # Apache-2.0
 cryptography>=2.1.4 # BSD/Apache-2.0
 Werkzeug>=0.9 # BSD License
-kubernetes>=24.2.0 # Apache-2.0
+#kubernetes>=24.2.0 # Apache-2.0
