@@ -47,8 +47,8 @@ if [[ -d "${HELM_CHART_DIR}" ]]; then
     cat << EOF > Chart.yaml
 apiVersion: v1
 name: magnum
-version: metachart
-appVersion: metachart
+version: 1.0.0
+appVersion: v1.0.0
 description: Magnum Helm Charts
 EOF
     sed -i '1i\dependencies:' requirements.yaml
