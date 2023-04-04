@@ -69,6 +69,10 @@ spec:
       containers:
       - image: ${CONTAINER_INFRA_PREFIX:-docker.io/}traefik:${TRAEFIK_INGRESS_CONTROLLER_TAG}
         name: ingress-traefik-backend
+        resources:
+          requests:
+            cpu: 100m
+            memory: 50Mi
         ports:
         - name: http
           containerPort: 80
@@ -123,7 +127,7 @@ spec:
       targetPort: metrics
 ---
 kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: ingress-traefik
 rules:
@@ -147,7 +151,7 @@ rules:
       - watch
 ---
 kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: ingress-traefik
 roleRef:
