@@ -648,8 +648,6 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
                 influx_grafana_dashboard_enabled,
             'docker_volume_type': docker_volume_type,
             'boot_volume_size': boot_volume_size,
-            'master_volume_size': boot_volume_size,
-            'worker_volume_size': boot_volume_size,
             'etcd_volume_size': etcd_volume_size,
             'kubelet_options': kubelet_options,
             'kubeapi_options': kubeapi_options,
@@ -1199,7 +1197,6 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         extra_subnet = mock_cluster.labels.get('extra_subnet')
         extra_security_group = mock_cluster.labels.get('extra_security_group')
 
-
         octavia_provider = mock_cluster.labels.get('octavia_provider')
         octavia_lb_algorithm = mock_cluster.labels.get('octavia_lb_algorithm')
         octavia_lb_healthcheck = mock_cluster.labels.get(
@@ -1229,8 +1226,6 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
                 influx_grafana_dashboard_enabled,
             'docker_volume_type': docker_volume_type,
             'boot_volume_size': boot_volume_size,
-            'master_volume_size': boot_volume_size,
-            'worker_volume_size': boot_volume_size,
             'etcd_volume_size': etcd_volume_size,
             'kubelet_options': kubelet_options,
             'kubeapi_options': kubeapi_options,
