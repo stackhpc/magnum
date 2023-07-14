@@ -1680,7 +1680,7 @@ _`extra_subnet`
 
 _`extra_security_group`
   Optional additional group name or UUID to add to network port.
-  Only used when 'extra_network' is defined. 
+  Only used when 'extra_network' is defined.
   Default: cluster node default security group.
 
 External load balancer for services
