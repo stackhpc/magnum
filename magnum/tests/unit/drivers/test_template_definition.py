@@ -20,6 +20,7 @@ import six
 
 from magnum.common import exception
 import magnum.conf
+from magnum.drivers.cluster_api import driver as cluster_api_driver
 from magnum.drivers.common import driver
 from magnum.drivers.heat import template_def as cmn_tdef
 from magnum.drivers.k8s_coreos_v1 import driver as k8s_coreos_dr
@@ -56,6 +57,13 @@ class TemplateDefinitionTestCase(base.TestCase):
                                                       entry_points):
             self.assertEqual(expected_entry_point, actual_entry_point)
             expected_entry_point.load.assert_called_once_with(require=False)
+
+    def test_get_vm_cluster_api_k8s_driver(self):
+        # NOTE(johngarbutt) covered by above test, but I wanted to be explict
+        cluster_driver = driver.Driver.get_driver('vm',
+                                                  'ubuntu',
+                                                  'kubernetes')
+        self.assertIsInstance(cluster_driver, cluster_api_driver.Driver)
 
     @mock.patch('magnum.drivers.common.driver.Driver.get_driver')
     def test_get_vm_atomic_kubernetes_definition(self, mock_driver):
@@ -473,8 +481,6 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'influx_grafana_dashboard_enabled')
         docker_volume_type = mock_cluster.labels.get(
             'docker_volume_type')
-        boot_volume_size = mock_cluster.labels.get(
-            'boot_volume_size')
         etcd_volume_size = mock_cluster.labels.get(
             'etcd_volume_size')
         hyperkube_prefix = mock_cluster.labels.get('hyperkube_prefix')
@@ -600,6 +606,8 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'csi_resizer_tag')
         csi_node_driver_registrar_tag = mock_cluster.labels.get(
             'csi_node_driver_registrar_tag')
+        csi_liveness_probe_tag = mock_cluster.labels.get(
+            'csi_liveness_probe_tag')
         draino_tag = mock_cluster.labels.get('draino_tag')
         autoscaler_tag = mock_cluster.labels.get('autoscaler_tag')
         min_node_count = mock_cluster.labels.get('min_node_count')
@@ -607,6 +615,7 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         npd_enabled = mock_cluster.labels.get('npd_enabled')
         boot_volume_size = mock_cluster.labels.get('boot_volume_size')
         boot_volume_type = mock_cluster.labels.get('boot_volume_type')
+        worker_volume_type = mock_cluster.labels.get('worker_volume_type')
         etcd_volume_type = mock_cluster.labels.get('etcd_volume_type')
         ostree_remote = mock_cluster.labels.get('ostree_remote')
         ostree_commit = mock_cluster.labels.get('ostree_commit')
@@ -626,6 +635,9 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         octavia_lb_algorithm = mock_cluster.labels.get('octavia_lb_algorithm')
         octavia_lb_healthcheck = mock_cluster.labels.get(
                 'octavia_lb_healthcheck')
+        extra_network = mock_cluster.labels.get('extra_network')
+        extra_subnet = mock_cluster.labels.get('extra_subnet')
+        extra_security_group = mock_cluster.labels.get('extra_security_group')
 
         k8s_def = k8sa_tdef.AtomicK8sTemplateDefinition()
 
@@ -725,6 +737,7 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'csi_snapshotter_tag': csi_snapshotter_tag,
             'csi_resizer_tag': csi_resizer_tag,
             'csi_node_driver_registrar_tag': csi_node_driver_registrar_tag,
+            'csi_liveness_probe_tag': csi_liveness_probe_tag,
             'draino_tag': draino_tag,
             'autoscaler_tag': autoscaler_tag,
             'min_node_count': min_node_count,
@@ -736,6 +749,10 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'minion_kube_tag': kube_tag,
             'boot_volume_size': boot_volume_size,
             'boot_volume_type': boot_volume_type,
+            'master_volume_size': boot_volume_size,
+            'master_volume_type': boot_volume_type,
+            'worker_volume_size': boot_volume_size,
+            'worker_volume_type': worker_volume_type,
             'etcd_volume_type': etcd_volume_type,
             'ostree_remote': ostree_remote,
             'ostree_commit': ostree_commit,
@@ -753,6 +770,9 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'octavia_provider': octavia_provider,
             'octavia_lb_algorithm': octavia_lb_algorithm,
             'octavia_lb_healthcheck': octavia_lb_healthcheck,
+            'extra_network': extra_network,
+            'extra_subnet': extra_subnet,
+            'extra_security_group': extra_security_group,
         }}
         mock_get_params.assert_called_once_with(mock_context,
                                                 mock_cluster_template,
@@ -1161,6 +1181,8 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'csi_resizer_tag')
         csi_node_driver_registrar_tag = mock_cluster.labels.get(
             'csi_node_driver_registrar_tag')
+        csi_liveness_probe_tag = mock_cluster.labels.get(
+            'csi_liveness_probe_tag')
         draino_tag = mock_cluster.labels.get('draino_tag')
         autoscaler_tag = mock_cluster.labels.get('autoscaler_tag')
         min_node_count = mock_cluster.labels.get('min_node_count')
@@ -1168,6 +1190,7 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         npd_enabled = mock_cluster.labels.get('npd_enabled')
         boot_volume_size = mock_cluster.labels.get('boot_volume_size')
         boot_volume_type = mock_cluster.labels.get('boot_volume_type')
+        worker_volume_type = mock_cluster.labels.get('worker_volume_type')
         etcd_volume_type = mock_cluster.labels.get('etcd_volume_type')
         ostree_remote = mock_cluster.labels.get('ostree_remote')
         ostree_commit = mock_cluster.labels.get('ostree_commit')
@@ -1184,6 +1207,9 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
 
         master_lb_allowed_cidrs = mock_cluster.labels.get(
             'master_lb_allowed_cidrs')
+        extra_network = mock_cluster.labels.get('extra_network')
+        extra_subnet = mock_cluster.labels.get('extra_subnet')
+        extra_security_group = mock_cluster.labels.get('extra_security_group')
 
         octavia_provider = mock_cluster.labels.get('octavia_provider')
         octavia_lb_algorithm = mock_cluster.labels.get('octavia_lb_algorithm')
@@ -1290,6 +1316,7 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'csi_snapshotter_tag': csi_snapshotter_tag,
             'csi_resizer_tag': csi_resizer_tag,
             'csi_node_driver_registrar_tag': csi_node_driver_registrar_tag,
+            'csi_liveness_probe_tag': csi_liveness_probe_tag,
             'draino_tag': draino_tag,
             'autoscaler_tag': autoscaler_tag,
             'min_node_count': min_node_count,
@@ -1301,6 +1328,10 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'minion_kube_tag': kube_tag,
             'boot_volume_size': boot_volume_size,
             'boot_volume_type': boot_volume_type,
+            'master_volume_size': boot_volume_size,
+            'master_volume_type': boot_volume_type,
+            'worker_volume_size': boot_volume_size,
+            'worker_volume_type': worker_volume_type,
             'etcd_volume_type': etcd_volume_type,
             'ostree_remote': ostree_remote,
             'ostree_commit': ostree_commit,
@@ -1318,6 +1349,9 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'octavia_provider': octavia_provider,
             'octavia_lb_algorithm': octavia_lb_algorithm,
             'octavia_lb_healthcheck': octavia_lb_healthcheck,
+            'extra_network': extra_network,
+            'extra_subnet': extra_subnet,
+            'extra_security_group': extra_security_group,
         }}
         mock_get_params.assert_called_once_with(mock_context,
                                                 mock_cluster_template,
