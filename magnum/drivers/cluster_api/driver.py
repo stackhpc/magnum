@@ -682,6 +682,22 @@ class Driver(driver.Driver):
             },
         }
 
+        extra_network_name = self._label(cluster, "extra_network_name", "")
+        if extra_network_name:
+            values["nodeGroupDefaults"] = {
+                "machineNetworking": {
+                    "ports": [
+                        {},
+                        {
+                            "network": {
+                                "name": extra_network_name,
+                            },
+                            "securityGroups": [],
+                        },
+                    ]
+                }
+            }
+
         self._helm_client.install_or_upgrade(
             self._get_chart_release_name(cluster),
             CONF.capi_driver.helm_chart_name,
@@ -891,10 +907,10 @@ class Driver(driver.Driver):
         )
 
     def create_federation(self, context, federation):
-        return NotImplementedError("Will not implement 'create_federation'")
+        raise NotImplementedError("Will not implement 'create_federation'")
 
     def update_federation(self, context, federation):
-        return NotImplementedError("Will no implement 'update_federation'")
+        raise NotImplementedError("Will no implement 'update_federation'")
 
     def delete_federation(self, context, federation):
-        return NotImplementedError("Will not implement 'delete_federation'")
+        raise NotImplementedError("Will not implement 'delete_federation'")

@@ -1176,6 +1176,7 @@ class ClusterAPIDriverTest(base.DbTestCase):
         mock_load.return_value = mock_client
         self.cluster_obj.cluster_template.dns_nameserver = ""
         self.cluster_obj.keypair = "kp1"
+        self.cluster_obj.cluster_template.labels["extra_network_name"] = "foo"
 
         self.driver.create_cluster(self.context, self.cluster_obj, 10)
 
@@ -1218,6 +1219,17 @@ class ClusterAPIDriverTest(base.DbTestCase):
                         "machineCount": 3,
                     }
                 ],
+                "nodeGroupDefaults": {
+                    "machineNetworking": {
+                        "ports": [
+                            {},
+                            {
+                                "network": {"name": "foo"},
+                                "securityGroups": [],
+                            },
+                        ],
+                    },
+                },
                 "machineSSHKeyName": "kp1",
             },
             repo=CONF.capi_driver.helm_chart_repo,
