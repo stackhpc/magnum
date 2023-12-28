@@ -1509,24 +1509,15 @@ resources:
                 - calico_v3_3
                 - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-3-x.sh
                 - if:
-                    - calico_v3_26
-                    - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-26-x.sh
-                    - get_file: ../../common/templates/kubernetes/fragments/calico-service.sh
-            # - if:
-            #     - calico_v3_25
-            #     - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-25-x.sh
-            # - if:
-            #     - calico_v3_26
-            #     - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-26-x.sh
-            # - if:
-            #     - calico_v3_27
-            #     - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-27-x.sh
-            # - if:
-            #     - not:
-            #         or:
-            #           - calico_v3_26
-            #           - calico_v3_3
-            #     - get_file: ../../common/templates/kubernetes/fragments/calico-service.sh
+                    - calico_v3_25
+                    - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-25-x.sh
+                    - if:
+                        - calico_v3_26
+                        - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-26-x.sh
+                        - if:
+                            - calico_v3_27
+                            - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-27-x.sh
+                            - get_file: ../../common/templates/kubernetes/fragments/calico-service.sh
             - get_file: ../../common/templates/kubernetes/fragments/flannel-service.sh
             - get_file: ../../common/templates/kubernetes/fragments/enable-helm-tiller.sh
             - str_replace:
