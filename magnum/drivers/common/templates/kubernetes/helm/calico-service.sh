@@ -15,3 +15,4 @@ if [ "$NETWORK_DRIVER" = "calico" ]; then
   version: ${CALICO_TAG}
   repository: https://projectcalico.docs.tigera.io/charts
 EOF
+fi
