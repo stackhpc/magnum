@@ -15,4 +15,10 @@ if [ "$NETWORK_DRIVER" = "calico" ]; then
   version: ${CALICO_TAG}
   repository: https://projectcalico.docs.tigera.io/charts
 EOF
+    cat << EOF >> ${HELM_CHART_DIR}/values.yaml
+tigera-operator:
+  installation:
+    flexVolumePath: /opt/kubernetes/kubelet-plugins/volume/exec/
+  flexVolumePluginDir: /var/lib/kubelet/volumeplugins
+EOF
 fi
