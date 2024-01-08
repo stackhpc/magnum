@@ -72,7 +72,7 @@ else
         cat << EOF > Chart.yaml
 apiVersion: v1
 name: magnum
-version: metachart
+version: 0.1.0
 appVersion: metachart
 description: Magnum Helm Charts
 EOF
