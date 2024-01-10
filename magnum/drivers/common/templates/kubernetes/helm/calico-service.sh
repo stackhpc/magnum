@@ -19,6 +19,14 @@ if [ "$NETWORK_DRIVER" = "calico" ]; then
     cat << EOF >> ${HELM_CHART_DIR}/values.yaml
 installation:
   flexVolumePath: /opt/kubernetes/kubelet-plugins/volume/exec/
+  calicoNetwork:
+    ipPools:
+    - blockSize: 26
+      cidr: ${CALICO_IPV4POOL}
+      ipipMode: ${CALICO_IPV4POOL_IPIP}
+    nodeAddressAutodetectionV4:
+      cidrs:
+        - '${CLUSTER_SUBNET_CIDR}'
 flexVolumePluginDir: /var/lib/kubelet/volumeplugins
 EOF
   echo "Waiting for Kubernetes API..."
