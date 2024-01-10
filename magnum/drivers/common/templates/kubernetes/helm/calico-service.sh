@@ -22,6 +22,12 @@ tigera-operator:
     flexVolumePath: /opt/kubernetes/kubelet-plugins/volume/exec/
   flexVolumePluginDir: /var/lib/kubelet/volumeplugins
 EOF
+  echo "Waiting for Kubernetes API..."
+  until  [ "ok" = "$(kubectl get --raw='/healthz')" ]; do
+      sleep 5
+  done
+  kubectl create namespace ${CHART_NAME}
+
   helm_prepare_cmd="helm repo add projectcalico https://docs.tigera.io/calico/charts"
   helm_install_cmd="helm install calico projectcalico/tigera-operator --version ${CALICO_TAG} -f values.yaml --namespace tigera-operator"
   helm_history_cmd="helm history calico --namespace tigera-operator"
@@ -30,7 +36,7 @@ EOF
       pushd ${HELM_CHART_DIR}
       $helm_prepare_cmd
       i=0
-      until ($helm_history_cmd | grep calico | grep deployed) || (helm dep update && $helm_install_cmd); do
+      until ($helm_history_cmd | grep calico | grep deployed) || $helm_install_cmd; do
           i=$((i + 1))
           [ $i -lt 60 ] || break;
           sleep 5
