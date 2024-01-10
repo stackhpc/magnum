@@ -17,10 +17,9 @@ if [ "$NETWORK_DRIVER" = "calico" ]; then
 #   repository: https://projectcalico.docs.tigera.io/charts
 # EOF
     cat << EOF >> ${HELM_CHART_DIR}/values.yaml
-tigera-operator:
-  installation:
-    flexVolumePath: /opt/kubernetes/kubelet-plugins/volume/exec/
-  flexVolumePluginDir: /var/lib/kubelet/volumeplugins
+installation:
+  flexVolumePath: /opt/kubernetes/kubelet-plugins/volume/exec/
+flexVolumePluginDir: /var/lib/kubelet/volumeplugins
 EOF
   echo "Waiting for Kubernetes API..."
   until  [ "ok" = "$(kubectl get --raw='/healthz')" ]; do
@@ -29,7 +28,7 @@ EOF
   kubectl create namespace ${CHART_NAME}
 
   helm_prepare_cmd="helm repo add projectcalico https://docs.tigera.io/calico/charts"
-  helm_install_cmd="helm install calico projectcalico/tigera-operator --version ${CALICO_TAG} -f values.yaml --namespace tigera-operator"
+  helm_install_cmd="helm upgrade --install calico projectcalico/tigera-operator --version ${CALICO_TAG} -f values.yaml --namespace tigera-operator"
   helm_history_cmd="helm history calico --namespace tigera-operator"
 
   if [[ -d "${HELM_CHART_DIR}" ]]; then
