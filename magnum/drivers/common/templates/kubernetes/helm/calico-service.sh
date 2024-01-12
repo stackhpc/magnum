@@ -41,6 +41,8 @@ EOF
       done
       popd
   fi
+  curl -L https://github.com/projectcalico/calico/releases/download/v3.27.0/calicoctl-linux-amd64 -o /srv/magnum/bin/kubectl-calico
+  chmod +x /srv/magnum/bin/kubectl-calico
   kubectl calico patch pool default-ipv4-ippool -p '{"spec":{"ipipMode": "Never"}}'
 
 fi
