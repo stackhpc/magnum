@@ -6,16 +6,8 @@ CHART_NAME="tigera-operator"
 
 if [ "$NETWORK_DRIVER" = "calico" ]; then
     echo "Writing ${CHART_NAME} config"
-
-    # HELM_CHART_DIR="/srv/magnum/kubernetes/helm/magnum"
     HELM_CHART_DIR="/srv/magnum/kubernetes/helm/calico"
     mkdir -p ${HELM_CHART_DIR}
-
-#     cat << EOF >> ${HELM_CHART_DIR}/requirements.yaml
-# - name: ${CHART_NAME}
-#   version: ${CALICO_TAG}
-#   repository: https://projectcalico.docs.tigera.io/charts
-# EOF
     cat << EOF >> ${HELM_CHART_DIR}/values.yaml
 installation:
   flexVolumePath: /opt/kubernetes/kubelet-plugins/volume/exec/
@@ -23,7 +15,6 @@ installation:
     ipPools:
     - blockSize: 26
       cidr: ${CALICO_IPV4POOL}
-      ipipMode: ${CALICO_IPV4POOL_IPIP}
     nodeAddressAutodetectionV4:
       cidrs:
         - '${CLUSTER_SUBNET_CIDR}'
@@ -50,5 +41,6 @@ EOF
       done
       popd
   fi
+  kubectl calico patch pool default-ipv4-ippool -p '{"spec":{"ipipMode": "Never"}}'
 
 fi
