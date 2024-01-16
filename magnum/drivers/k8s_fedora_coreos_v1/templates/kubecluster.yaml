@@ -622,7 +622,7 @@ parameters:
   calico_tag:
     type: string
     description: tag of the calico containers used to provision the calico node
-    default: v3.21.2
+    default: v3.25.2
 
   calico_kube_controllers_tag:
     type: string
