@@ -5,6 +5,7 @@ set -ex
 CHART_NAME="tigera-operator"
 
 if [ "$NETWORK_DRIVER" = "calico" ]; then
+    _prefix=${CONTAINER_INFRA_PREFIX:-quay.io/calico/}
     echo "Writing ${CHART_NAME} config"
     HELM_CHART_DIR="/srv/magnum/kubernetes/helm/calico"
     mkdir -p ${HELM_CHART_DIR}
@@ -18,6 +19,7 @@ installation:
     nodeAddressAutodetectionV4:
       cidrs:
         - '${CLUSTER_SUBNET_CIDR}'
+  registry: ${_prefix}
 flexVolumePluginDir: /var/lib/kubelet/volumeplugins
 EOF
   echo "Waiting for Kubernetes API..."
