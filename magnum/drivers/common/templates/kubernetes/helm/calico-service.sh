@@ -16,6 +16,7 @@ installation:
     ipPools:
     - blockSize: 26
       cidr: ${CALICO_IPV4POOL}
+      encapsulation: IPIP
     nodeAddressAutodetectionV4:
       cidrs:
         - '${CLUSTER_SUBNET_CIDR}'
@@ -45,9 +46,4 @@ EOF
   fi
   curl -L https://github.com/projectcalico/calico/releases/download/${CALICO_TAG}/calicoctl-linux-amd64 -o /srv/magnum/bin/kubectl-calico
   chmod +x /srv/magnum/bin/kubectl-calico
-  until (kubectl calico get ipPool | grep default-ipv4-ippool); do
-    sleep 5
-  done
-  kubectl calico patch pool default-ipv4-ippool -p '{"spec":{"ipipMode": "Never"}}'
-
 fi
