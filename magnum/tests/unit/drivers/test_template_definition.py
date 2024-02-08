@@ -550,12 +550,6 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         prometheus_adapter_configmap = mock_cluster.labels.get(
             'prometheus_adapter_configmap')
         project_id = mock_cluster.project_id
-        tiller_enabled = mock_cluster.labels.get(
-            'tiller_enabled')
-        tiller_tag = mock_cluster.labels.get(
-            'tiller_tag')
-        tiller_namespace = mock_cluster.labels.get(
-            'tiller_namespace')
         helm_client_url = mock_cluster.labels.get(
             'helm_client_url')
         helm_client_sha256 = mock_cluster.labels.get(
@@ -699,9 +693,6 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'prometheus_adapter_configmap': prometheus_adapter_configmap,
             'project_id': project_id,
             'external_network': external_network_id,
-            'tiller_enabled': tiller_enabled,
-            'tiller_tag': tiller_tag,
-            'tiller_namespace': tiller_namespace,
             'helm_client_url': helm_client_url,
             'helm_client_sha256': helm_client_sha256,
             'helm_client_tag': helm_client_tag,
@@ -1119,12 +1110,6 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         prometheus_adapter_configmap = mock_cluster.labels.get(
             'prometheus_adapter_configmap')
         project_id = mock_cluster.project_id
-        tiller_enabled = mock_cluster.labels.get(
-            'tiller_enabled')
-        tiller_tag = mock_cluster.labels.get(
-            'tiller_tag')
-        tiller_namespace = mock_cluster.labels.get(
-            'tiller_namespace')
         helm_client_url = mock_cluster.labels.get(
             'helm_client_url')
         helm_client_sha256 = mock_cluster.labels.get(
@@ -1273,9 +1258,6 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'prometheus_adapter_configmap': prometheus_adapter_configmap,
             'project_id': project_id,
             'external_network': external_network_id,
-            'tiller_enabled': tiller_enabled,
-            'tiller_tag': tiller_tag,
-            'tiller_namespace': tiller_namespace,
             'helm_client_url': helm_client_url,
             'helm_client_sha256': helm_client_sha256,
             'helm_client_tag': helm_client_tag,
