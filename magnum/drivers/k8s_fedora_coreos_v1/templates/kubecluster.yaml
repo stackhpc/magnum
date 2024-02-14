@@ -36,12 +36,6 @@ conditions:
     - create_cluster_resources
     - is_worker
 
-  calico_v3_3:
-    yaql:
-      expression: $.data.calico_tag.startsWith("v3.3.")
-      data:
-        calico_tag: {get_param: calico_tag}
-
 parameters:
 
   # needs to become a list if we want to join master nodes?
@@ -604,7 +598,7 @@ parameters:
   calico_tag:
     type: string
     description: tag of the calico containers used to provision the calico node
-    default: v3.21.2
+    default: v3.25.2
 
   calico_kube_controllers_tag:
     type: string
@@ -1131,6 +1125,10 @@ resources:
         - protocol: tcp
           port_range_min: 179
           port_range_max: 179
+          # Calico - Typha
+        - protocol: tcp
+          port_range_min: 5473
+          port_range_max: 5473
         - protocol: tcp
           port_range_min: 7080
           port_range_max: 7080
@@ -1487,10 +1485,6 @@ resources:
             - "source /etc/bashrc"
             - get_file: ../../common/templates/kubernetes/fragments/kube-apiserver-to-kubelet-role.sh
             - get_file: ../../common/templates/kubernetes/fragments/core-dns-service.sh
-            - if:
-                - calico_v3_3
-                - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-3-x.sh
-                - get_file: ../../common/templates/kubernetes/fragments/calico-service.sh
             - get_file: ../../common/templates/kubernetes/fragments/flannel-service.sh
             - get_file: ../../common/templates/kubernetes/fragments/enable-helm-tiller.sh
             - str_replace:
@@ -1511,6 +1505,8 @@ resources:
             - get_file: ../../common/templates/kubernetes/fragments/enable-auto-scaling.sh
             - get_file: ../../common/templates/kubernetes/fragments/enable-cinder-csi.sh
             # Helm Based Installation Configuration Scripts
+            - get_file: ../../common/templates/kubernetes/fragments/install-helm.sh
+            - get_file: ../../common/templates/kubernetes/helm/calico-service.sh
             - get_file: ../../common/templates/kubernetes/helm/metrics-server.sh
             - str_replace:
                 template: {get_file: ../../common/templates/kubernetes/helm/prometheus-operator.sh}
