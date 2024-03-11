@@ -1338,10 +1338,7 @@ resources:
             - "#!/bin/bash"
             - get_file: ../../common/templates/kubernetes/fragments/kube-apiserver-to-kubelet-role.sh
             - get_file: ../../common/templates/kubernetes/fragments/core-dns-service.sh
-            - if:
-                - calico_v3_3
-                - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-3-x.sh
-                - get_file: ../../common/templates/kubernetes/fragments/calico-service.sh
+            - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-21-x.sh
             - get_file: ../../common/templates/kubernetes/fragments/flannel-service.sh
             - get_file: ../../common/templates/kubernetes/fragments/enable-helm-tiller.sh
             - str_replace:
