@@ -1062,6 +1062,13 @@ parameters:
       tag of the k8s.gcr.io/sig-storage/liveness-probe container
     default: v2.5.0
 
+  calico_helm:
+    type: boolean
+    description: >
+      If true, use Helm for Calico deployment otherwise, use
+      static Calico manifest' to the end of description
+    default: false
+
 resources:
 
   ######################################################################
@@ -1132,6 +1139,10 @@ resources:
         - protocol: tcp
           port_range_min: 179
           port_range_max: 179
+          # Calico - Typha
+        - protocol: tcp
+          port_range_min: 5473
+          port_range_max: 5473
         - protocol: tcp
           port_range_min: 7080
           port_range_max: 7080
@@ -1488,10 +1499,16 @@ resources:
             - "source /etc/bashrc"
             - get_file: ../../common/templates/kubernetes/fragments/kube-apiserver-to-kubelet-role.sh
             - get_file: ../../common/templates/kubernetes/fragments/core-dns-service.sh
+            - get_file: ../../common/templates/kubernetes/fragments/install-helm.sh
             - if:
-                - calico_v3_26
-                - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-26-x.sh
-                - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-21-x.sh
+                - equals:
+                  - get_param: calico_helm
+                  - false
+                - if:
+                  - calico_v3_26
+                  - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-26-x.sh
+                  - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-21-x.sh
+                - get_file: ../../common/templates/kubernetes/helm/calico-service.sh
             - get_file: ../../common/templates/kubernetes/fragments/flannel-service.sh
             - get_file: ../../common/templates/kubernetes/fragments/enable-helm-tiller.sh
             - str_replace:
@@ -1512,7 +1529,6 @@ resources:
             - get_file: ../../common/templates/kubernetes/fragments/enable-auto-scaling.sh
             - get_file: ../../common/templates/kubernetes/fragments/enable-cinder-csi.sh
             # Helm Based Installation Configuration Scripts
-            - get_file: ../../common/templates/kubernetes/fragments/install-helm.sh
             - get_file: ../../common/templates/kubernetes/helm/metrics-server.sh
             - str_replace:
                 template: {get_file: ../../common/templates/kubernetes/helm/prometheus-operator.sh}
