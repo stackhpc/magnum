@@ -36,11 +36,12 @@ conditions:
     - create_cluster_resources
     - is_worker
 
-  calico_v3_3:
+  calico_v3_26:
     yaql:
-      expression: $.data.calico_tag.startsWith("v3.3.")
+      expression: $.data.calico_tag.startsWith("v3.26.")
       data:
         calico_tag: {get_param: calico_tag}
+
 
 parameters:
 
@@ -226,7 +227,7 @@ parameters:
     type: string
     description: >
       List of admission control plugins to activate
-    default: "PodSecurityPolicy,NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota,TaintNodesByCondition,Priority,DefaultTolerationSeconds,DefaultStorageClass,StorageObjectInUseProtection,PersistentVolumeClaimResize,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,RuntimeClass"
+    default: "NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota,TaintNodesByCondition,Priority,DefaultTolerationSeconds,DefaultStorageClass,StorageObjectInUseProtection,PersistentVolumeClaimResize,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,RuntimeClass"
 
   kube_allow_priv:
     type: string
@@ -816,21 +817,6 @@ parameters:
     type: string
     description: >
       project id of current project
-
-  tiller_enabled:
-    type: boolean
-    description: Choose whether to install tiller or not.
-    default: false
-
-  tiller_tag:
-    type: string
-    description: tag of tiller container
-    default: "v2.16.7"
-
-  tiller_namespace:
-    type: string
-    description: namespace where tiller will be installed.
-    default: "magnum-tiller"
 
   helm_client_url:
     type: string
@@ -1427,9 +1413,6 @@ resources:
           prometheus_adapter_chart_tag: {get_param: prometheus_adapter_chart_tag}
           prometheus_adapter_configmap: {get_param: prometheus_adapter_configmap}
           project_id: {get_param: project_id}
-          tiller_enabled: {get_param: tiller_enabled}
-          tiller_tag: {get_param: tiller_tag}
-          tiller_namespace: {get_param: tiller_namespace}
           helm_client_url: {get_param: helm_client_url}
           helm_client_sha256: {get_param: helm_client_sha256}
           helm_client_tag: {get_param: helm_client_tag}
@@ -1482,11 +1465,10 @@ resources:
             - get_file: ../../common/templates/kubernetes/fragments/kube-apiserver-to-kubelet-role.sh
             - get_file: ../../common/templates/kubernetes/fragments/core-dns-service.sh
             - if:
-                - calico_v3_3
-                - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-3-x.sh
-                - get_file: ../../common/templates/kubernetes/fragments/calico-service.sh
+                - calico_v3_26
+                - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-26-x.sh
+                - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-21-x.sh
             - get_file: ../../common/templates/kubernetes/fragments/flannel-service.sh
-            - get_file: ../../common/templates/kubernetes/fragments/enable-helm-tiller.sh
             - str_replace:
                 template: {get_file: ../../common/templates/kubernetes/fragments/enable-prometheus-monitoring.sh}
                 params:
@@ -1505,6 +1487,7 @@ resources:
             - get_file: ../../common/templates/kubernetes/fragments/enable-auto-scaling.sh
             - get_file: ../../common/templates/kubernetes/fragments/enable-cinder-csi.sh
             # Helm Based Installation Configuration Scripts
+            - get_file: ../../common/templates/kubernetes/fragments/install-helm.sh
             - get_file: ../../common/templates/kubernetes/helm/metrics-server.sh
             - str_replace:
                 template: {get_file: ../../common/templates/kubernetes/helm/prometheus-operator.sh}

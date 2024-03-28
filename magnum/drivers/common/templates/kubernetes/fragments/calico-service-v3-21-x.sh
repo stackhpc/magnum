@@ -1,4 +1,4 @@
-step="calico-service"
+step="calico-service-v3-21-x"
 printf "Starting to run ${step}\n"
 
 set -e
@@ -4441,7 +4441,7 @@ metadata:
 
 # This manifest creates a Pod Disruption Budget for Controller to allow K8s Cluster Autoscaler to evict
 
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: calico-kube-controllers

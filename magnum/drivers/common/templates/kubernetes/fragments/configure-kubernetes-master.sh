@@ -52,7 +52,6 @@ fi
 KUBE_MASTER_URI="https://127.0.0.1:$KUBE_API_PORT"
 mkdir -p /srv/magnum/kubernetes/
 cat > /etc/kubernetes/config <<EOF
-KUBE_LOGTOSTDERR="--logtostderr=true"
 KUBE_LOG_LEVEL="--v=3"
 EOF
 cat > /etc/kubernetes/kubelet <<EOF
@@ -97,7 +96,7 @@ ExecStart=/bin/bash -c '/usr/bin/podman run --name kube-apiserver \\
     --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \\
     \${CONTAINER_INFRA_PREFIX:-\${HYPERKUBE_PREFIX}}hyperkube:\${KUBE_TAG} \\
     kube-apiserver \\
-    \$KUBE_LOGTOSTDERR \$KUBE_LOG_LEVEL \$KUBE_ETCD_SERVERS \$KUBE_API_ADDRESS \$KUBELET_PORT \$KUBE_SERVICE_ADDRESSES \$KUBE_ADMISSION_CONTROL \$KUBE_API_ARGS'
+    \$KUBE_LOG_LEVEL \$KUBE_ETCD_SERVERS \$KUBE_API_ADDRESS \$KUBELET_PORT \$KUBE_SERVICE_ADDRESSES \$KUBE_ADMISSION_CONTROL \$KUBE_API_ARGS'
 ExecStop=-/usr/bin/podman stop kube-apiserver
 Delegate=yes
 Restart=always
@@ -127,7 +126,7 @@ ExecStart=/bin/bash -c '/usr/bin/podman run --name kube-controller-manager \\
     \${CONTAINER_INFRA_PREFIX:-\${HYPERKUBE_PREFIX}}hyperkube:\${KUBE_TAG} \\
     kube-controller-manager \\
     --secure-port=0 \\
-    \$KUBE_LOGTOSTDERR \$KUBE_LOG_LEVEL \$KUBE_MASTER \$KUBE_CONTROLLER_MANAGER_ARGS'
+    \$KUBE_LOG_LEVEL \$KUBE_MASTER \$KUBE_CONTROLLER_MANAGER_ARGS'
 ExecStop=-/usr/bin/podman stop kube-controller-manager
 Delegate=yes
 Restart=always
@@ -156,7 +155,7 @@ ExecStart=/bin/bash -c '/usr/bin/podman run --name kube-scheduler \\
     --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \\
     \${CONTAINER_INFRA_PREFIX:-\${HYPERKUBE_PREFIX}}hyperkube:\${KUBE_TAG} \\
     kube-scheduler \\
-    \$KUBE_LOGTOSTDERR \$KUBE_LOG_LEVEL \$KUBE_MASTER \$KUBE_SCHEDULER_ARGS'
+    \$KUBE_LOG_LEVEL \$KUBE_MASTER \$KUBE_SCHEDULER_ARGS'
 ExecStop=-/usr/bin/podman stop kube-scheduler
 Delegate=yes
 Restart=always
@@ -211,7 +210,7 @@ ExecStart=/bin/bash -c '/usr/bin/podman run --name kubelet \\
     --volume /etc/machine-id:/etc/machine-id \\
     \${CONTAINER_INFRA_PREFIX:-\${HYPERKUBE_PREFIX}}hyperkube:\${KUBE_TAG} \\
     kubelet \\
-    \$KUBE_LOGTOSTDERR \$KUBE_LOG_LEVEL \$KUBELET_API_SERVER \$KUBELET_ADDRESS \$KUBELET_PORT \$KUBELET_HOSTNAME \$KUBELET_ARGS'
+    \$KUBE_LOG_LEVEL \$KUBELET_API_SERVER \$KUBELET_ADDRESS \$KUBELET_PORT \$KUBELET_HOSTNAME \$KUBELET_ARGS'
 ExecStop=-/usr/bin/podman stop kubelet
 Delegate=yes
 Restart=always
@@ -243,7 +242,7 @@ ExecStart=/bin/bash -c '/usr/bin/podman run --name kube-proxy \\
     --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \\
     \${CONTAINER_INFRA_PREFIX:-\${HYPERKUBE_PREFIX}}hyperkube:\${KUBE_TAG} \\
     kube-proxy \\
-    \$KUBE_LOGTOSTDERR \$KUBE_LOG_LEVEL \$KUBE_MASTER \$KUBE_PROXY_ARGS'
+    \$KUBE_LOG_LEVEL \$KUBE_MASTER \$KUBE_PROXY_ARGS'
 ExecStop=-/usr/bin/podman stop kube-proxy
 Delegate=yes
 Restart=always
@@ -457,7 +456,6 @@ if [ -f /etc/sysconfig/docker ] ; then
     sed -i -E 's/^OPTIONS=("|'"'"')/OPTIONS=\1'"${DOCKER_OPTIONS}"' /' /etc/sysconfig/docker
 fi
 
-KUBELET_ARGS="${KUBELET_ARGS} --network-plugin=cni --cni-conf-dir=/etc/cni/net.d --cni-bin-dir=/opt/cni/bin"
 KUBELET_ARGS="${KUBELET_ARGS} --register-with-taints=node-role.kubernetes.io/master=:NoSchedule"
 KUBELET_ARGS="${KUBELET_ARGS} --node-labels=magnum.openstack.org/role=${NODEGROUP_ROLE}"
 KUBELET_ARGS="${KUBELET_ARGS} --node-labels=magnum.openstack.org/nodegroup=${NODEGROUP_NAME}"
@@ -501,11 +499,19 @@ KUBELET_ARGS="${KUBELET_ARGS} --client-ca-file=${CERT_DIR}/ca.crt --tls-cert-fil
 
 # specified cgroup driver
 KUBELET_ARGS="${KUBELET_ARGS} --cgroup-driver=${CGROUP_DRIVER}"
+
 if [ ${CONTAINER_RUNTIME} = "containerd"  ] ; then
+    # check kubelet version, 1.27.0 dropped docker shim and --container-runtime command line option
+    KUBELET_VERSION=$($ssh_cmd podman run --rm ${CONTAINER_INFRA_PREFIX:-${HYPERKUBE_PREFIX}}hyperkube:${KUBE_TAG} kubelet --version | awk '{print $2}')
+    CONTAINER_RUNTIME_REMOTE_DROPPED="v1.27.0"
+    if [[ "${CONTAINER_RUNTIME_REMOTE_DROPPED}" != $(echo -e "${CONTAINER_RUNTIME_REMOTE_DROPPED}\n${KUBELET_VERSION}" | sort -V | head -n1) && "${KUBELET_VERSION}" != "devel" ]]; then
+        KUBELET_ARGS="${KUBELET_ARGS} --container-runtime=remote"
+    fi
     KUBELET_ARGS="${KUBELET_ARGS} --runtime-cgroups=/system.slice/containerd.service"
-    KUBELET_ARGS="${KUBELET_ARGS} --container-runtime=remote"
     KUBELET_ARGS="${KUBELET_ARGS} --runtime-request-timeout=15m"
     KUBELET_ARGS="${KUBELET_ARGS} --container-runtime-endpoint=unix:///run/containerd/containerd.sock"
+else
+    KUBELET_ARGS="${KUBELET_ARGS} --network-plugin=cni --cni-conf-dir=/etc/cni/net.d --cni-bin-dir=/opt/cni/bin"
 fi
 
 if [ -z "${KUBE_NODE_IP}" ]; then
