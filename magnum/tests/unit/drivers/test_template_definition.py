@@ -550,12 +550,6 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         prometheus_adapter_configmap = mock_cluster.labels.get(
             'prometheus_adapter_configmap')
         project_id = mock_cluster.project_id
-        tiller_enabled = mock_cluster.labels.get(
-            'tiller_enabled')
-        tiller_tag = mock_cluster.labels.get(
-            'tiller_tag')
-        tiller_namespace = mock_cluster.labels.get(
-            'tiller_namespace')
         helm_client_url = mock_cluster.labels.get(
             'helm_client_url')
         helm_client_sha256 = mock_cluster.labels.get(
@@ -615,6 +609,9 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         octavia_lb_algorithm = mock_cluster.labels.get('octavia_lb_algorithm')
         octavia_lb_healthcheck = mock_cluster.labels.get(
                 'octavia_lb_healthcheck')
+        extra_network = mock_cluster.labels.get('extra_network')
+        extra_subnet = mock_cluster.labels.get('extra_subnet')
+        extra_security_group = mock_cluster.labels.get('extra_security_group')
 
         k8s_def = k8sa_tdef.AtomicK8sTemplateDefinition()
 
@@ -696,9 +693,6 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'prometheus_adapter_configmap': prometheus_adapter_configmap,
             'project_id': project_id,
             'external_network': external_network_id,
-            'tiller_enabled': tiller_enabled,
-            'tiller_tag': tiller_tag,
-            'tiller_namespace': tiller_namespace,
             'helm_client_url': helm_client_url,
             'helm_client_sha256': helm_client_sha256,
             'helm_client_tag': helm_client_tag,
@@ -742,6 +736,9 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'octavia_provider': octavia_provider,
             'octavia_lb_algorithm': octavia_lb_algorithm,
             'octavia_lb_healthcheck': octavia_lb_healthcheck,
+            'extra_network': extra_network,
+            'extra_subnet': extra_subnet,
+            'extra_security_group': extra_security_group,
         }}
         mock_get_params.assert_called_once_with(mock_context,
                                                 mock_cluster_template,
@@ -1113,12 +1110,6 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         prometheus_adapter_configmap = mock_cluster.labels.get(
             'prometheus_adapter_configmap')
         project_id = mock_cluster.project_id
-        tiller_enabled = mock_cluster.labels.get(
-            'tiller_enabled')
-        tiller_tag = mock_cluster.labels.get(
-            'tiller_tag')
-        tiller_namespace = mock_cluster.labels.get(
-            'tiller_namespace')
         helm_client_url = mock_cluster.labels.get(
             'helm_client_url')
         helm_client_sha256 = mock_cluster.labels.get(
@@ -1175,6 +1166,9 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
 
         master_lb_allowed_cidrs = mock_cluster.labels.get(
             'master_lb_allowed_cidrs')
+        extra_network = mock_cluster.labels.get('extra_network')
+        extra_subnet = mock_cluster.labels.get('extra_subnet')
+        extra_security_group = mock_cluster.labels.get('extra_security_group')
 
         octavia_provider = mock_cluster.labels.get('octavia_provider')
         octavia_lb_algorithm = mock_cluster.labels.get('octavia_lb_algorithm')
@@ -1263,9 +1257,6 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'prometheus_adapter_configmap': prometheus_adapter_configmap,
             'project_id': project_id,
             'external_network': external_network_id,
-            'tiller_enabled': tiller_enabled,
-            'tiller_tag': tiller_tag,
-            'tiller_namespace': tiller_namespace,
             'helm_client_url': helm_client_url,
             'helm_client_sha256': helm_client_sha256,
             'helm_client_tag': helm_client_tag,
@@ -1309,6 +1300,9 @@ class AtomicK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'octavia_provider': octavia_provider,
             'octavia_lb_algorithm': octavia_lb_algorithm,
             'octavia_lb_healthcheck': octavia_lb_healthcheck,
+            'extra_network': extra_network,
+            'extra_subnet': extra_subnet,
+            'extra_security_group': extra_security_group,
         }}
         mock_get_params.assert_called_once_with(mock_context,
                                                 mock_cluster_template,

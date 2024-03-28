@@ -413,13 +413,6 @@ the table are linked to more details elsewhere in the user guide.
 +---------------------------------------+--------------------+---------------+
 | `k8s_keystone_auth_tag`_              | see below          | see below     |
 +---------------------------------------+--------------------+---------------+
-| `tiller_enabled`_                     | - true             | false         |
-|                                       | - false            |               |
-+---------------------------------------+--------------------+---------------+
-| `tiller_tag`_                         | see below          | ""            |
-+---------------------------------------+--------------------+---------------+
-| `tiller_namespace`_                   | see below          | see below     |
-+---------------------------------------+--------------------+---------------+
 | `helm_client_url`_                    | see below          | see below     |
 +---------------------------------------+--------------------+---------------+
 | `helm_client_sha256`_                 | see below          | see below     |
@@ -483,6 +476,12 @@ the table are linked to more details elsewhere in the user guide.
 | `octavia_lb_algorithm`_               | see bellow         | ROUND_ROBIN   |
 +---------------------------------------+--------------------+---------------+
 | `octavia_lb_healthcheck`_             | see bellow         | true          |
++---------------------------------------+--------------------+---------------+
+| `extra_network`_                      | see below          | ""            |
++---------------------------------------+--------------------+---------------+
+| `extra_subnet`_                       | see below          | ""            |
++---------------------------------------+--------------------+---------------+
+| `extra_security_group`_               | see below          | see below     |
 +---------------------------------------+--------------------+---------------+
 
 .. _cluster:
@@ -1224,13 +1223,14 @@ _`container_infra_prefix`
 
   Images that might be needed if 'monitoring_enabled' is 'true':
 
-  * quay.io/prometheus/alertmanager:v0.20.0
-  * docker.io/squareup/ghostunnel:v1.5.2
-  * docker.io/jettech/kube-webhook-certgen:v1.0.0
-  * quay.io/coreos/prometheus-operator:v0.37.0
-  * quay.io/coreos/configmap-reload:v0.0.1
-  * quay.io/coreos/prometheus-config-reloader:v0.37.0
-  * quay.io/prometheus/prometheus:v2.15.2
+  * quay.io/prometheus/alertmanager:v0.21.0
+  * docker.io/jettech/kube-webhook-certgen:v1.5.0
+  * quay.io/prometheus-operator/prometheus-operator:v0.44.0
+  * docker.io/jimmidyson/configmap-reload:v0.4.0
+  * quay.io/prometheus-operator/prometheus-config-reloader:v0.44.0
+  * quay.io/prometheus/prometheus:v2.22.1
+  * quay.io/prometheus/node-exporter:v1.0.1
+  * docker.io/directxman12/k8s-prometheus-adapter:v0.8.2
 
   Images that might be needed if 'cinder_csi_enabled' is 'true':
 
@@ -1449,22 +1449,6 @@ _`k8s_keystone_auth_tag`
   Train default: v1.14.0
   Ussuri default: v1.18.0
 
-_`tiller_enabled`
-  If set to true, tiller will be deployed in the kube-system namespace.
-  Ussuri default: false
-  Train default: false
-
-_`tiller_tag`
-  This label allows users to override the default container tag for Tiller.
-  For additional tags, `refer to Tiller page
-  <https://github.com/helm/helm/tags>`_ and look for tags<v3.0.0.
-  Train default: v2.12.3
-  Ussuri default: v2.16.7
-
-_`tiller_namespace`
-  The namespace in which Tiller and Helm v2 chart install jobs are installed.
-  Default: magnum-tiller
-
 _`helm_client_url`
   URL of the helm client binary.
   Default: ''
@@ -1476,8 +1460,7 @@ _`helm_client_sha256`
 _`helm_client_tag`
   This label allows users to override the default container tag for Helm
   client.  For additional tags, `refer to Helm client page
-  <https://github.com/helm/helm/tags>`_. You must use identical tiller_tag if
-  you wish to use Tiller (for helm_client_tag<v3.0.0).
+  <https://github.com/helm/helm/tags>`_.
   Ussuri default: v3.2.1
 
 _`master_lb_floating_ip_enabled`
@@ -1617,6 +1600,22 @@ _`octavia_lb_healthcheck`
   If true, enable Octavia load balancer healthcheck
   Default: true
 
+_`extra_network`
+  Optional additional network name or UUID to add to cluster nodes.
+  When not specified, additional networks are not added. Optionally specify
+  'extra_subnet' if you wish to use a specific subnet on the network.
+  Default: ""
+
+_`extra_subnet`
+  Optional additional subnet name or UUID to add to cluster nodes.
+  Only used when 'extra_network' is defined.
+  Default: ""
+
+_`extra_security_group`
+  Optional additional group name or UUID to add to network port.
+  Only used when 'extra_network' is defined.
+  Default: cluster node default security group.
+
 Supported versions
 ------------------
 
@@ -1692,8 +1691,6 @@ _`ingress_controller`
   Controller is configured. For more details about octavia-ingress-controller
   please refer to `cloud-provider-openstack document
   <https://github.com/kubernetes/cloud-provider-openstack/blob/master/docs/octavia-ingress-controller/using-octavia-ingress-controller.md>`_
-  To use 'nginx' ingress controller, tiller_enabled must be true when using
-  helm_client_tag<v3.0.0.
 
 _`ingress_controller_role`
   This label defines the role nodes should have to run an instance of the
@@ -2462,7 +2459,6 @@ _`calico_tag`
   Ussuri default: v3.13.1
   Victoria default: v3.13.1
   Wallaby default: v3.13.1
-
 
 Besides, the Calico network driver needs kube_tag with v1.9.3 or later, because
 Calico needs extra mounts for the kubelet container. See `commit

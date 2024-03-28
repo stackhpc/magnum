@@ -545,18 +545,6 @@ parameters:
     description: >
       project id of current project
 
-  tiller_enabled:
-    type: string
-    description: Whether to enable tiller or not
-
-  tiller_tag:
-    type: string
-    description: tag of tiller container
-
-  tiller_namespace:
-    type: string
-    description: namespace where tiller will be installed
-
   helm_client_url:
     type: string
     description: url of helm client tarball
@@ -714,6 +702,21 @@ parameters:
     description: >
       Tag of metrics-scraper for kubernetes dashboard.
 
+  extra_network:
+    type: string
+    description: >
+      Additional network name to bind ports to instances
+
+  extra_subnet:
+    type: string
+    description: >
+      Additional subnet name
+
+  extra_security_group:
+    type: string
+    description: >
+      Additional security group name
+
 conditions:
 
   image_based: {equals: [{get_param: boot_volume_size}, 0]}
@@ -722,6 +725,24 @@ conditions:
       equals:
       - get_param: boot_volume_size
       - 0
+
+  extra_network_defined:
+    not:
+      equals:
+      - get_param: extra_network
+      - ''
+
+  extra_subnet_defined:
+    not:
+      equals:
+      - get_param: extra_subnet
+      - ''
+
+  extra_security_group_defined:
+    not:
+      equals:
+      - get_param: extra_security_group
+      - ''
 
 resources:
   ######################################################################
@@ -895,9 +916,6 @@ resources:
                   "$PROMETHEUS_ADAPTER_CONFIGMAP": {get_param: prometheus_adapter_configmap}
                   "$PROJECT_ID": {get_param: project_id}
                   "$EXTERNAL_NETWORK_ID": {get_param: external_network}
-                  "$TILLER_ENABLED": {get_param: tiller_enabled}
-                  "$TILLER_TAG": {get_param: tiller_tag}
-                  "$TILLER_NAMESPACE": {get_param: tiller_namespace}
                   "$HELM_CLIENT_URL": {get_param: helm_client_url}
                   "$HELM_CLIENT_SHA256": {get_param: helm_client_sha256}
                   "$HELM_CLIENT_TAG": {get_param: helm_client_tag}
@@ -985,7 +1003,12 @@ resources:
       software_config_transport: POLL_SERVER_HEAT
       user_data: {get_resource: agent_config}
       networks:
-        - port: {get_resource: kube_master_eth0}
+        list_concat:
+          - - port: {get_resource: kube_master_eth0}
+          - if:
+              - "extra_network_defined"
+              - - port: {get_resource: kube_master_eth1}
+              - []
       scheduler_hints: { group: { get_param: nodes_server_group_id }}
       availability_zone: {get_param: availability_zone}
 
@@ -999,7 +1022,12 @@ resources:
       software_config_transport: POLL_SERVER_HEAT
       user_data: {get_resource: agent_config}
       networks:
-        - port: {get_resource: kube_master_eth0}
+        list_concat:
+          - - port: {get_resource: kube_master_eth0}
+          - if:
+              - "extra_network_defined"
+              - - port: {get_resource: kube_master_eth1}
+              - []
       scheduler_hints: { group: { get_param: nodes_server_group_id }}
       availability_zone: {get_param: availability_zone}
       block_device_mapping_v2:
@@ -1016,6 +1044,23 @@ resources:
         - subnet: {get_param: fixed_subnet}
       allowed_address_pairs:
         - ip_address: {get_param: pods_network_cidr}
+      replacement_policy: AUTO
+
+  kube_master_eth1:
+    type: OS::Neutron::Port
+    condition: extra_network_defined
+    properties:
+      network: {get_param: extra_network}
+      security_groups:
+        - if:
+            - "extra_security_group_defined"
+            - {get_param: extra_security_group}
+            - {get_param: secgroup_kube_master_id}
+      fixed_ips:
+        if:
+          - "extra_subnet_defined"
+          - - subnet: {get_param: extra_subnet}
+          - []
       replacement_policy: AUTO
 
   kube_master_floating:

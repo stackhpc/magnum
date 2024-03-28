@@ -36,11 +36,12 @@ conditions:
     - create_cluster_resources
     - is_worker
 
-  calico_v3_3:
+  calico_v3_26:
     yaql:
-      expression: $.data.calico_tag.startsWith("v3.3.")
+      expression: $.data.calico_tag.startsWith("v3.26.")
       data:
         calico_tag: {get_param: calico_tag}
+
 
 parameters:
 
@@ -226,7 +227,7 @@ parameters:
     type: string
     description: >
       List of admission control plugins to activate
-    default: "PodSecurityPolicy,NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota,TaintNodesByCondition,Priority,DefaultTolerationSeconds,DefaultStorageClass,StorageObjectInUseProtection,PersistentVolumeClaimResize,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,RuntimeClass"
+    default: "NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota,TaintNodesByCondition,Priority,DefaultTolerationSeconds,DefaultStorageClass,StorageObjectInUseProtection,PersistentVolumeClaimResize,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,RuntimeClass"
 
   kube_allow_priv:
     type: string
@@ -495,7 +496,7 @@ parameters:
   coredns_tag:
     type: string
     description: tag for coredns
-    default: 1.6.6
+    default: 1.8.7
 
   flannel_tag:
     type: string
@@ -772,8 +773,8 @@ parameters:
 
   prometheus_operator_chart_tag:
     type: string
-    description: The stable/prometheus-operator chart version to use.
-    default: v8.12.13
+    description: The prometheus-community/kube-prometheus-stack chart version to use.
+    default: 33.0.0
 
   prometheus_adapter_enabled:
     type: boolean
@@ -782,8 +783,8 @@ parameters:
 
   prometheus_adapter_chart_tag:
     type: string
-    description: The stable/prometheus-adapter chart version to use.
-    default: 1.4.0
+    description: The prometheus-community/prometheus-adapter chart version to use.
+    default: 3.0.2
 
   prometheus_adapter_configmap:
     type: string
@@ -794,21 +795,6 @@ parameters:
     type: string
     description: >
       project id of current project
-
-  tiller_enabled:
-    type: boolean
-    description: Choose whether to install tiller or not.
-    default: false
-
-  tiller_tag:
-    type: string
-    description: tag of tiller container
-    default: "v2.16.7"
-
-  tiller_namespace:
-    type: string
-    description: namespace where tiller will be installed.
-    default: "magnum-tiller"
 
   helm_client_url:
     type: string
@@ -1008,12 +994,31 @@ parameters:
     description: >
       Post install manifest URL used to setup some cloud provider/vendor
       specific configs
-    default: ""
+    default: ''
 
   master_lb_allowed_cidrs:
     type: comma_delimited_list
     description: The allowed CIDR list for master load balancer
     default: []
+
+  extra_network:
+    type: string
+    description: >
+      Additional network to bind nodes to
+    default: ''
+
+  extra_subnet:
+    type: string
+    description: >
+      Subnet for additional network
+    default: ''
+
+  extra_security_group:
+    type: string
+    description: >
+      Additional security group name
+    default: ''
+
 
 resources:
 
@@ -1112,6 +1117,22 @@ resources:
         - protocol: udp
           port_range_min: 8472
           port_range_max: 8472
+          # Prometheus Server
+        - protocol: tcp
+          port_range_min: 9090
+          port_range_max: 9090
+        - protocol: tcp
+          port_range_min: 10259
+          port_range_max: 10259
+        - protocol: tcp
+          port_range_min: 10257
+          port_range_max: 10257
+        - protocol: tcp
+          port_range_min: 10249
+          port_range_max: 10249
+        - protocol: tcp
+          port_range_min: 9153
+          port_range_max: 9153
 
   secgroup_kube_minion:
     condition: create_cluster_resources
@@ -1370,9 +1391,6 @@ resources:
           prometheus_adapter_chart_tag: {get_param: prometheus_adapter_chart_tag}
           prometheus_adapter_configmap: {get_param: prometheus_adapter_configmap}
           project_id: {get_param: project_id}
-          tiller_enabled: {get_param: tiller_enabled}
-          tiller_tag: {get_param: tiller_tag}
-          tiller_namespace: {get_param: tiller_namespace}
           helm_client_url: {get_param: helm_client_url}
           helm_client_sha256: {get_param: helm_client_sha256}
           helm_client_tag: {get_param: helm_client_tag}
@@ -1407,6 +1425,9 @@ resources:
           containerd_tarball_sha256: {get_param: containerd_tarball_sha256}
           post_install_manifest_url: {get_param: post_install_manifest_url}
           metrics_scraper_tag: {get_param: metrics_scraper_tag}
+          extra_network: {get_param: extra_network}
+          extra_subnet: {get_param: extra_subnet}
+          extra_security_group: {get_param: extra_security_group}
 
   kube_cluster_config:
     condition: create_cluster_resources
@@ -1422,11 +1443,10 @@ resources:
             - get_file: ../../common/templates/kubernetes/fragments/kube-apiserver-to-kubelet-role.sh
             - get_file: ../../common/templates/kubernetes/fragments/core-dns-service.sh
             - if:
-                - calico_v3_3
-                - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-3-x.sh
-                - get_file: ../../common/templates/kubernetes/fragments/calico-service.sh
+                - calico_v3_26
+                - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-26-x.sh
+                - get_file: ../../common/templates/kubernetes/fragments/calico-service-v3-21-x.sh
             - get_file: ../../common/templates/kubernetes/fragments/flannel-service.sh
-            - get_file: ../../common/templates/kubernetes/fragments/enable-helm-tiller.sh
             - str_replace:
                 template: {get_file: ../../common/templates/kubernetes/fragments/enable-prometheus-monitoring.sh}
                 params:
@@ -1445,6 +1465,7 @@ resources:
             - get_file: ../../common/templates/kubernetes/fragments/enable-auto-scaling.sh
             - get_file: ../../common/templates/kubernetes/fragments/enable-cinder-csi.sh
             # Helm Based Installation Configuration Scripts
+            - get_file: ../../common/templates/kubernetes/fragments/install-helm.sh
             - get_file: ../../common/templates/kubernetes/helm/metrics-server.sh
             - str_replace:
                 template: {get_file: ../../common/templates/kubernetes/helm/prometheus-operator.sh}
@@ -1589,6 +1610,10 @@ resources:
           containerd_tarball_sha256: {get_param: containerd_tarball_sha256}
           kube_service_account_key: {get_param: kube_service_account_key}
           kube_service_account_private_key: {get_param: kube_service_account_private_key}
+          extra_network: {get_param: extra_network}
+          extra_subnet: {get_param: extra_subnet}
+          extra_security_group: {get_param: extra_security_group}
+
 outputs:
 
   api_address:

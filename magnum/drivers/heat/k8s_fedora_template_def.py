@@ -112,9 +112,6 @@ class K8sFedoraTemplateDefinition(k8s_template_def.K8sTemplateDefinition):
                       'prometheus_adapter_chart_tag',
                       'prometheus_adapter_configmap',
                       'selinux_mode',
-                      'tiller_enabled',
-                      'tiller_tag',
-                      'tiller_namespace',
                       'helm_client_url', 'helm_client_sha256',
                       'helm_client_tag',
                       'traefik_ingress_controller_tag',
@@ -127,7 +124,8 @@ class K8sFedoraTemplateDefinition(k8s_template_def.K8sTemplateDefinition):
                       'min_node_count', 'max_node_count', 'npd_enabled',
                       'ostree_remote', 'ostree_commit',
                       'use_podman', 'kube_image_digest',
-                      'metrics_scraper_tag']
+                      'metrics_scraper_tag',
+                      'extra_network', 'extra_subnet', 'extra_security_group']
 
         labels = self._get_relevant_labels(cluster, kwargs)
 
