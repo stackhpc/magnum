@@ -1116,7 +1116,6 @@ class FCOSK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         extra_subnet = mock_cluster.labels.get('extra_subnet')
         extra_security_group = mock_cluster.labels.get('extra_security_group')
 
-
         octavia_provider = mock_cluster.labels.get('octavia_provider')
         octavia_lb_algorithm = mock_cluster.labels.get('octavia_lb_algorithm')
         octavia_lb_healthcheck = mock_cluster.labels.get(
