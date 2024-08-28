@@ -22,6 +22,7 @@ from magnum.tests.unit.db import base
 
 class SqlAlchemyCustomTypesTestCase(base.DbTestCase):
 
+    #TODO(tylerchristie): these tests need fixing
     def test_JSONEncodedDict_default_value(self):
         # Create ClusterTemplate w/o labels
         cluster_template1_id = uuidutils.generate_uuid()
