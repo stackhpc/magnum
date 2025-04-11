@@ -467,6 +467,12 @@ the table are linked to more details elsewhere in the user guide.
 +---------------------------------------+--------------------+---------------+
 | `octavia_lb_healthcheck`_             | see bellow         | true          |
 +---------------------------------------+--------------------+---------------+
+| `extra_network`_                      | see below          | ""            |
++---------------------------------------+--------------------+---------------+
+| `extra_subnet`_                       | see below          | ""            |
++---------------------------------------+--------------------+---------------+
+| `extra_security_group`_               | see below          | see below     |
++---------------------------------------+--------------------+---------------+
 
 .. _cluster:
 
@@ -1179,13 +1185,14 @@ _`container_infra_prefix`
 
   Images that might be needed if 'monitoring_enabled' is 'true':
 
-  * quay.io/prometheus/alertmanager:v0.20.0
-  * docker.io/squareup/ghostunnel:v1.5.2
-  * docker.io/jettech/kube-webhook-certgen:v1.0.0
-  * quay.io/coreos/prometheus-operator:v0.37.0
-  * quay.io/coreos/configmap-reload:v0.0.1
-  * quay.io/coreos/prometheus-config-reloader:v0.37.0
-  * quay.io/prometheus/prometheus:v2.15.2
+  * quay.io/prometheus/alertmanager:v0.21.0
+  * docker.io/jettech/kube-webhook-certgen:v1.5.0
+  * quay.io/prometheus-operator/prometheus-operator:v0.44.0
+  * docker.io/jimmidyson/configmap-reload:v0.4.0
+  * quay.io/prometheus-operator/prometheus-config-reloader:v0.44.0
+  * quay.io/prometheus/prometheus:v2.22.1
+  * quay.io/prometheus/node-exporter:v1.0.1
+  * docker.io/directxman12/k8s-prometheus-adapter:v0.8.2
 
   Images that might be needed if 'cinder_csi_enabled' is 'true':
 
@@ -1552,6 +1559,22 @@ _`octavia_lb_algorithm`
 _`octavia_lb_healthcheck`
   If true, enable Octavia load balancer healthcheck
   Default: true
+
+_`extra_network`
+  Optional additional network name or UUID to add to cluster nodes.
+  When not specified, additional networks are not added. Optionally specify
+  'extra_subnet' if you wish to use a specific subnet on the network.
+  Default: ""
+
+_`extra_subnet`
+  Optional additional subnet name or UUID to add to cluster nodes.
+  Only used when 'extra_network' is defined.
+  Default: ""
+
+_`extra_security_group`
+  Optional additional group name or UUID to add to network port.
+  Only used when 'extra_network' is defined.
+  Default: cluster node default security group.
 
 Supported versions
 ------------------
@@ -2318,7 +2341,6 @@ _`calico_tag`
   Ussuri default: v3.13.1
   Victoria default: v3.13.1
   Wallaby default: v3.13.1
-
 
 Besides, the Calico network driver needs kube_tag with v1.9.3 or later, because
 Calico needs extra mounts for the kubelet container. See `commit

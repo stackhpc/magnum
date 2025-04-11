@@ -74,14 +74,17 @@ data:
   Corefile: |
     .:53 {
         errors
-        log
-        health
+        log stdout
+        health {
+            lameduck 5s
+        }
+        ready
         kubernetes ${DNS_CLUSTER_DOMAIN} ${PORTAL_NETWORK_CIDR} ${PODS_NETWORK_CIDR} {
            pods verified
            fallthrough in-addr.arpa ip6.arpa
         }
         prometheus :9153
-        forward . /etc/resolv.conf
+        forward . /run/systemd/resolve/resolv.conf
         cache 30
         loop
         reload
@@ -141,6 +144,9 @@ spec:
           readOnly: true
         - name: tmp
           mountPath: /tmp
+        - name: resolvconf
+          mountPath: /run/systemd/resolve/resolv.conf
+          readOnly: true
         ports:
         - containerPort: 53
           name: dns
@@ -183,6 +189,10 @@ spec:
             items:
             - key: Corefile
               path: Corefile
+        - name: resolvconf
+          hostPath:
+            path: /run/systemd/resolve/resolv.conf
+            type: File
 ---
 apiVersion: v1
 kind: Service

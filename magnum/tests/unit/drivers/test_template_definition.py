@@ -553,6 +553,9 @@ class FCOSK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
         octavia_lb_algorithm = mock_cluster.labels.get('octavia_lb_algorithm')
         octavia_lb_healthcheck = mock_cluster.labels.get(
                 'octavia_lb_healthcheck')
+        extra_network = mock_cluster.labels.get('extra_network')
+        extra_subnet = mock_cluster.labels.get('extra_subnet')
+        extra_security_group = mock_cluster.labels.get('extra_security_group')
 
         k8s_def = k8s_fcos_tdef.FCOSK8sTemplateDefinition()
 
@@ -676,6 +679,9 @@ class FCOSK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'octavia_provider': octavia_provider,
             'octavia_lb_algorithm': octavia_lb_algorithm,
             'octavia_lb_healthcheck': octavia_lb_healthcheck,
+            'extra_network': extra_network,
+            'extra_subnet': extra_subnet,
+            'extra_security_group': extra_security_group,
         }}
         mock_get_params.assert_called_once_with(mock_context,
                                                 mock_cluster_template,
@@ -1101,6 +1107,9 @@ class FCOSK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
 
         master_lb_allowed_cidrs = mock_cluster.labels.get(
             'master_lb_allowed_cidrs')
+        extra_network = mock_cluster.labels.get('extra_network')
+        extra_subnet = mock_cluster.labels.get('extra_subnet')
+        extra_security_group = mock_cluster.labels.get('extra_security_group')
 
         octavia_provider = mock_cluster.labels.get('octavia_provider')
         octavia_lb_algorithm = mock_cluster.labels.get('octavia_lb_algorithm')
@@ -1231,6 +1240,9 @@ class FCOSK8sTemplateDefinitionTestCase(BaseK8sTemplateDefinitionTestCase):
             'octavia_provider': octavia_provider,
             'octavia_lb_algorithm': octavia_lb_algorithm,
             'octavia_lb_healthcheck': octavia_lb_healthcheck,
+            'extra_network': extra_network,
+            'extra_subnet': extra_subnet,
+            'extra_security_group': extra_security_group,
         }}
         mock_get_params.assert_called_once_with(mock_context,
                                                 mock_cluster_template,
