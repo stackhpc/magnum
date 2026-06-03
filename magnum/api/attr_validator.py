@@ -12,8 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from glanceclient import exc as glance_exception
-from novaclient import exceptions as nova_exception
+from openstack import exceptions as sdk_exceptions
 from oslo_utils import strutils
 
 from magnum.api import utils as api_utils
@@ -34,13 +33,16 @@ def validate_image(cli, image):
     """Validate image"""
 
     try:
-        image_found = api_utils.get_openstack_resource(cli.glance().images,
-                                                       image, 'images')
-    except (glance_exception.NotFound, exception.ResourceNotFound):
+        image_found = cli.glance().find_image(image, ignore_missing=False)
+    except (sdk_exceptions.NotFoundException, exception.ResourceNotFound):
         raise exception.ImageNotFound(image_id=image)
-    except glance_exception.HTTPForbidden:
+    except sdk_exceptions.DuplicateResource:
+        msg = _("Multiple images exist with same name '%s'. "
+                "Please use the image ID instead.") % image
+        raise exception.Conflict(msg)
+    except sdk_exceptions.ForbiddenException:
         raise exception.ImageNotAuthorized(image_id=image)
-    if not image_found.get('os_distro'):
+    if not image_found.os_distro:
         raise exception.OSDistroFieldNotFound(image_id=image)
     return image_found
 
@@ -54,7 +56,7 @@ def validate_flavor(cli, flavor):
 
     if flavor is None:
         return
-    flavor_list = cli.nova().flavors.list()
+    flavor_list = list(cli.nova().flavors())
     for f in flavor_list:
         if f.name == flavor or f.id == flavor:
             return
@@ -69,8 +71,8 @@ def validate_keypair(cli, keypair):
     if keypair is None:
         return
     try:
-        cli.nova().keypairs.get(keypair)
-    except nova_exception.NotFound:
+        cli.nova().get_keypair(keypair)
+    except sdk_exceptions.ResourceNotFound:
         raise exception.KeyPairNotFound(keypair=keypair)
 
 
@@ -78,11 +80,9 @@ def validate_external_network(cli, external_network):
     """Validate external network"""
 
     count = 0
-    ext_filter = {'router:external': True}
-    networks = cli.neutron().list_networks(**ext_filter)
-    for net in networks.get('networks'):
-        if (net.get('name') == external_network or
-                net.get('id') == external_network):
+    networks = list(cli.neutron().networks(is_router_external=True))
+    for net in networks:
+        if (net.name == external_network or net.id == external_network):
             count = count + 1
 
     if count == 0:
@@ -101,11 +101,11 @@ def validate_fixed_network(cli, fixed_network):
 
     count = 0
     network_id = None
-    networks = cli.neutron().list_networks()
-    for net in networks.get('networks'):
-        if fixed_network in [net.get('name'), net.get('id')]:
+    networks = list(cli.neutron().networks())
+    for net in networks:
+        if fixed_network in [net.name, net.id]:
             count += 1
-            network_id = net.get('id')
+            network_id = net.id
 
     if count == 0:
         # Unable to find the configured fixed_network.
@@ -123,11 +123,11 @@ def validate_fixed_subnet(cli, fixed_subnet):
 
     count = 0
     subnet_id = None
-    subnets = cli.neutron().list_subnets()
-    for subnet in subnets.get('subnets'):
-        if fixed_subnet in [subnet.get('name'), subnet.get('id')]:
+    subnets = list(cli.neutron().subnets())
+    for subnet in subnets:
+        if fixed_subnet in [subnet.name, subnet.id]:
             count += 1
-            subnet_id = subnet.get('id')
+            subnet_id = subnet.id
 
     if count == 0:
         # Unable to find the configured fixed_subnet.
@@ -188,7 +188,7 @@ def validate_flavor_root_volume_size(cli, flavor, boot_volume_size):
         return
 
     flavor_obj = None
-    flavor_list = cli.nova().flavors.list()
+    flavor_list = list(cli.nova().flavors())
     for f in flavor_list:
         if f.name == flavor or f.id == flavor:
             flavor_obj = f

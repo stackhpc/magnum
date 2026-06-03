@@ -41,7 +41,7 @@ def get_test_cluster_template(**kw):
         'docker_volume_size': kw.get('docker_volume_size', 20),
         'docker_storage_driver': kw.get('docker_storage_driver',
                                         'devicemapper'),
-        'cluster_distro': kw.get('cluster_distro', 'fedora-coreos'),
+        'cluster_distro': kw.get('cluster_distro', 'ubuntu'),
         'coe': kw.get('coe', 'kubernetes'),
         'created_at': kw.get('created_at'),
         'updated_at': kw.get('updated_at'),
@@ -115,11 +115,6 @@ def get_test_cluster(**kw):
             'master_count': kw.get('master_count', 3),
             'master_addresses': kw.get('master_addresses', ['172.17.2.18'])
         })
-    # Only add Keystone trusts related attributes on demand since they may
-    # break other tests.
-    for attr in ['trustee_username', 'trustee_password', 'trust_id']:
-        if attr in kw:
-            attrs[attr] = kw[attr]
     # Required only in PeriodicTestCase, may break other tests
     for attr in ['keypair', 'health_status', 'health_status_reason']:
         if attr in kw:

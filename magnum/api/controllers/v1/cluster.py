@@ -273,8 +273,6 @@ class ClusterPatchType(types.JsonPatchType):
         internal_attrs = ['/api_address', '/node_addresses',
                           '/master_addresses', '/stack_id',
                           '/ca_cert_ref', '/magnum_cert_ref',
-                          '/trust_id', '/trustee_user_name',
-                          '/trustee_password', '/trustee_user_id',
                           '/etcd_ca_cert_ref', '/front_proxy_ca_cert_ref']
         return types.JsonPatchType.internal_attrs() + internal_attrs
 
@@ -532,12 +530,12 @@ class ClustersController(base.Controller):
 
         # If labels is not present, use cluster_template value
         if cluster.labels == wtypes.Unset or not cluster.labels:
-            cluster.labels = cluster_template.labels
+            cluster.labels = cluster_template.labels.copy()
         else:
             # If labels are provided check if the user wishes to merge
             # them with the values from the cluster template.
             if cluster.merge_labels:
-                labels = cluster_template.labels
+                labels = cluster_template.labels.copy()
                 labels.update(cluster.labels)
                 cluster.labels = labels
 

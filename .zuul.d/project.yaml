@@ -10,6 +10,8 @@
     check:
       jobs:
         - magnum-tempest-plugin-tests-api
+        - magnum-capi-helm-tests-cluster-v1_34
     gate:
       jobs:
         - magnum-tempest-plugin-tests-api
+        - magnum-capi-helm-tests-cluster-v1_34

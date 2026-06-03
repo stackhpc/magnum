@@ -13,8 +13,7 @@
 # under the License.
 
 
-from glanceclient import exc as glance_exception
-from novaclient import exceptions as nova_exc
+from openstack import exceptions as sdk_exceptions
 from unittest import mock
 
 from magnum.api import attr_validator
@@ -30,11 +29,11 @@ class TestAttrValidator(base.BaseTestCase):
         mock_flavor.id = 'test_flavor_id'
         mock_flavors = [mock_flavor]
         mock_nova = mock.MagicMock()
-        mock_nova.flavors.list.return_value = mock_flavors
+        mock_nova.flavors.return_value = mock_flavors
         mock_os_cli = mock.MagicMock()
         mock_os_cli.nova.return_value = mock_nova
         attr_validator.validate_flavor(mock_os_cli, 'test_flavor')
-        self.assertTrue(mock_nova.flavors.list.called)
+        self.assertTrue(mock_nova.flavors.called)
 
     def test_validate_flavor_with_none_flavor(self):
         mock_flavor = mock.MagicMock()
@@ -42,11 +41,11 @@ class TestAttrValidator(base.BaseTestCase):
         mock_flavor.id = 'test_flavor_id'
         mock_flavors = [mock_flavor]
         mock_nova = mock.MagicMock()
-        mock_nova.flavors.list.return_value = mock_flavors
+        mock_nova.flavors.return_value = mock_flavors
         mock_os_cli = mock.MagicMock()
         mock_os_cli.nova.return_value = mock_nova
         attr_validator.validate_flavor(mock_os_cli, None)
-        self.assertEqual(False, mock_nova.flavors.list.called)
+        self.assertEqual(False, mock_nova.flavors.called)
 
     def test_validate_flavor_with_invalid_flavor(self):
         mock_flavor = mock.MagicMock()
@@ -54,7 +53,7 @@ class TestAttrValidator(base.BaseTestCase):
         mock_flavor.id = 'test_flavor_id_not_equal'
         mock_flavors = [mock_flavor]
         mock_nova = mock.MagicMock()
-        mock_nova.flavors.list.return_value = mock_flavors
+        mock_nova.flavors.return_value = mock_flavors
         mock_os_cli = mock.MagicMock()
         mock_os_cli.nova.return_value = mock_nova
         self.assertRaises(exception.FlavorNotFound,
@@ -62,21 +61,25 @@ class TestAttrValidator(base.BaseTestCase):
                           mock_os_cli, 'test_flavor')
 
     def test_validate_external_network_with_valid_network(self):
-        mock_networks = {'networks': [{'name': 'test_ext_net',
-                         'id': 'test_ext_net_id'}]}
+        mock_net = mock.MagicMock()
+        mock_net.name = 'test_ext_net'
+        mock_net.id = 'test_ext_net_id'
         mock_neutron = mock.MagicMock()
-        mock_neutron.list_networks.return_value = mock_networks
+        mock_neutron.networks.return_value = [mock_net]
         mock_os_cli = mock.MagicMock()
         mock_os_cli.neutron.return_value = mock_neutron
         attr_validator.validate_external_network(mock_os_cli, 'test_ext_net')
-        self.assertTrue(mock_neutron.list_networks.called)
+        mock_neutron.networks.assert_called_once_with(is_router_external=True)
 
     def test_validate_external_network_with_multiple_valid_network(self):
-        mock_networks = {'networks':
-                         [{'name': 'test_ext_net', 'id': 'test_ext_net_id1'},
-                          {'name': 'test_ext_net', 'id': 'test_ext_net_id2'}]}
+        mock_net1 = mock.MagicMock()
+        mock_net1.name = 'test_ext_net'
+        mock_net1.id = 'test_ext_net_id1'
+        mock_net2 = mock.MagicMock()
+        mock_net2.name = 'test_ext_net'
+        mock_net2.id = 'test_ext_net_id2'
         mock_neutron = mock.MagicMock()
-        mock_neutron.list_networks.return_value = mock_networks
+        mock_neutron.networks.return_value = [mock_net1, mock_net2]
         mock_os_cli = mock.MagicMock()
         mock_os_cli.neutron.return_value = mock_neutron
         self.assertRaises(exception.Conflict,
@@ -84,10 +87,11 @@ class TestAttrValidator(base.BaseTestCase):
                           mock_os_cli, 'test_ext_net')
 
     def test_validate_external_network_with_invalid_network(self):
-        mock_networks = {'networks': [{'name': 'test_ext_net_not_equal',
-                         'id': 'test_ext_net_id_not_equal'}]}
+        mock_net = mock.MagicMock()
+        mock_net.name = 'test_ext_net_not_equal'
+        mock_net.id = 'test_ext_net_id_not_equal'
         mock_neutron = mock.MagicMock()
-        mock_neutron.list_networks.return_value = mock_networks
+        mock_neutron.networks.return_value = [mock_net]
         mock_os_cli = mock.MagicMock()
         mock_os_cli.neutron.return_value = mock_neutron
         self.assertRaises(exception.ExternalNetworkNotFound,
@@ -95,26 +99,27 @@ class TestAttrValidator(base.BaseTestCase):
                           mock_os_cli, 'test_ext_net')
 
     def test_validate_fixed_network_with_valid_network(self):
-        mock_networks = {'networks': [{'name': 'test_net',
-                         'id': 'test_net_id'}]}
+        mock_net = mock.MagicMock()
+        mock_net.name = 'test_net'
+        mock_net.id = 'test_net_id'
         mock_neutron = mock.MagicMock()
-        mock_neutron.list_networks.return_value = mock_networks
+        mock_neutron.networks.return_value = [mock_net]
         mock_os_cli = mock.MagicMock()
         mock_os_cli.neutron.return_value = mock_neutron
         self.assertEqual('test_net_id',
                          attr_validator.validate_fixed_network(mock_os_cli,
                                                                'test_net'))
-        self.assertTrue(mock_neutron.list_networks.called)
+        mock_neutron.networks.assert_called_once_with()
 
     def test_validate_fixed_network_with_multiple_valid_network(self):
-        mock_networks = {
-            'networks': [{'name': 'test_net',
-                          'id': 'test_net_id1'},
-                         {'name': 'test_net',
-                          'id': 'test_net_id2'}],
-        }
+        mock_net1 = mock.MagicMock()
+        mock_net1.name = 'test_net'
+        mock_net1.id = 'test_net_id1'
+        mock_net2 = mock.MagicMock()
+        mock_net2.name = 'test_net'
+        mock_net2.id = 'test_net_id2'
         mock_neutron = mock.MagicMock()
-        mock_neutron.list_networks.return_value = mock_networks
+        mock_neutron.networks.return_value = [mock_net1, mock_net2]
         mock_os_cli = mock.MagicMock()
         mock_os_cli.neutron.return_value = mock_neutron
         self.assertRaises(exception.Conflict,
@@ -122,10 +127,11 @@ class TestAttrValidator(base.BaseTestCase):
                           mock_os_cli, 'test_net')
 
     def test_validate_fixed_network_with_invalid_network(self):
-        mock_networks = {'networks': [{'name': 'test_net_not_equal',
-                         'id': 'test_net_id_not_equal'}]}
+        mock_net = mock.MagicMock()
+        mock_net.name = 'test_net_not_equal'
+        mock_net.id = 'test_net_id_not_equal'
         mock_neutron = mock.MagicMock()
-        mock_neutron.list_networks.return_value = mock_networks
+        mock_neutron.networks.return_value = [mock_net]
         mock_os_cli = mock.MagicMock()
         mock_os_cli.neutron.return_value = mock_neutron
         self.assertRaises(exception.FixedNetworkNotFound,
@@ -133,24 +139,24 @@ class TestAttrValidator(base.BaseTestCase):
                           mock_os_cli, 'test_net')
 
     def test_validate_fixed_subnet_with_valid_subnet(self):
+        mock_subnet = mock.MagicMock()
+        mock_subnet.name = 'test_subnet'
+        mock_subnet.id = 'test_subnet_id'
         mock_neutron = mock.MagicMock()
-        mock_subnets = {'subnets': [{'name': 'test_subnet',
-                                     'id': 'test_subnet_id',
-                                     'network_id': 'test_net_id'}]}
-        mock_neutron.list_subnets.return_value = mock_subnets
+        mock_neutron.subnets.return_value = [mock_subnet]
         mock_os_cli = mock.MagicMock()
         mock_os_cli.neutron.return_value = mock_neutron
         self.assertEqual('test_subnet_id',
                          attr_validator.validate_fixed_subnet(mock_os_cli,
                                                               'test_subnet'))
-        mock_neutron.list_subnets.assert_called_with()
+        mock_neutron.subnets.assert_called_with()
 
     def test_validate_fixed_subnet_with_invalid_subnet(self):
+        mock_subnet = mock.MagicMock()
+        mock_subnet.name = 'test_subnet'
+        mock_subnet.id = 'test_subnet_id'
         mock_neutron = mock.MagicMock()
-        mock_subnets = {'subnets': [{'name': 'test_subnet',
-                                     'id': 'test_subnet_id',
-                                     'network_id': 'test_net_id'}]}
-        mock_neutron.list_subnets.return_value = mock_subnets
+        mock_neutron.subnets.return_value = [mock_subnet]
         mock_os_cli = mock.MagicMock()
         mock_os_cli.neutron.return_value = mock_neutron
         self.assertRaises(exception.FixedSubnetNotFound,
@@ -158,14 +164,14 @@ class TestAttrValidator(base.BaseTestCase):
                           mock_os_cli, 'test_subnet_not_found')
 
     def test_validate_fixed_subnet_with_multiple_valid_subnet(self):
+        mock_subnet1 = mock.MagicMock()
+        mock_subnet1.name = 'test_subnet'
+        mock_subnet1.id = 'test_subnet_id'
+        mock_subnet2 = mock.MagicMock()
+        mock_subnet2.name = 'test_subnet'
+        mock_subnet2.id = 'test_subnet_id2'
         mock_neutron = mock.MagicMock()
-        mock_subnets = {'subnets': [{'name': 'test_subnet',
-                                     'id': 'test_subnet_id',
-                                     'network_id': 'test_net_id'},
-                                    {'name': 'test_subnet',
-                                     'id': 'test_subnet_id2',
-                                     'network_id': 'test_net_id2'}]}
-        mock_neutron.list_subnets.return_value = mock_subnets
+        mock_neutron.subnets.return_value = [mock_subnet1, mock_subnet2]
         mock_os_cli = mock.MagicMock()
         mock_os_cli.neutron.return_value = mock_neutron
         self.assertRaises(exception.Conflict,
@@ -176,7 +182,7 @@ class TestAttrValidator(base.BaseTestCase):
         mock_keypair = mock.MagicMock()
         mock_keypair.id = None
         mock_nova = mock.MagicMock()
-        mock_nova.keypairs.get.return_value = mock_keypair
+        mock_nova.get_keypair.return_value = mock_keypair
         mock_os_cli = mock.MagicMock()
         mock_os_cli.nova.return_value = mock_nova
         attr_validator.validate_keypair(mock_os_cli, None)
@@ -185,14 +191,14 @@ class TestAttrValidator(base.BaseTestCase):
         mock_keypair = mock.MagicMock()
         mock_keypair.id = 'test-keypair'
         mock_nova = mock.MagicMock()
-        mock_nova.keypairs.get.return_value = mock_keypair
+        mock_nova.get_keypair.return_value = mock_keypair
         mock_os_cli = mock.MagicMock()
         mock_os_cli.nova.return_value = mock_nova
         attr_validator.validate_keypair(mock_os_cli, 'test-keypair')
 
     def test_validate_keypair_with_invalid_keypair(self):
         mock_nova = mock.MagicMock()
-        mock_nova.keypairs.get.side_effect = nova_exc.NotFound('test-keypair')
+        mock_nova.get_keypair.side_effect = sdk_exceptions.ResourceNotFound()
         mock_os_cli = mock.MagicMock()
         mock_os_cli.nova.return_value = mock_nova
         self.assertRaises(exception.KeyPairNotFound,
@@ -203,82 +209,76 @@ class TestAttrValidator(base.BaseTestCase):
         fake_labels = {}
         attr_validator.validate_labels(fake_labels)
 
-    @mock.patch('magnum.api.utils.get_openstack_resource')
-    def test_validate_image_with_valid_image_by_name(self, mock_os_res):
-        mock_image = {'name': 'fedora-21-coreos-5',
-                      'id': 'e33f0988-1730-405e-8401-30cbc8535302',
-                      'os_distro': 'fedora-coreos'}
-        mock_os_res.return_value = mock_image
+    def test_validate_image_with_valid_image_by_name(self):
+        mock_image = mock.MagicMock()
+        mock_image.os_distro = 'ubuntu'
         mock_os_cli = mock.MagicMock()
-        attr_validator.validate_image(mock_os_cli, 'fedora-21-coreos-5')
-        self.assertTrue(mock_os_res.called)
+        mock_os_cli.glance.return_value.find_image.return_value = mock_image
+        attr_validator.validate_image(mock_os_cli, 'ubuntu-24.04')
+        mock_os_cli.glance.return_value.find_image.assert_called_once_with(
+            'ubuntu-24.04', ignore_missing=False)
 
-    @mock.patch('magnum.api.utils.get_openstack_resource')
-    def test_validate_image_with_forbidden_image(self, mock_os_res):
-        def glance_side_effect(cli, image, name):
-            raise glance_exception.HTTPForbidden()
-
-        mock_os_res.side_effect = glance_side_effect
+    def test_validate_image_with_forbidden_image(self):
         mock_os_cli = mock.MagicMock()
+        mock_os_cli.glance.return_value.find_image.side_effect = (
+            sdk_exceptions.ForbiddenException())
         self.assertRaises(exception.ImageNotAuthorized,
                           attr_validator.validate_image, mock_os_cli,
-                          'fedora-21-coreos-5')
+                          'ubuntu-24.04')
 
-    @mock.patch('magnum.api.utils.get_openstack_resource')
-    def test_validate_image_with_valid_image_by_id(self, mock_os_res):
-        mock_image = {'name': 'fedora-21-coreos-5',
-                      'id': 'e33f0988-1730-405e-8401-30cbc8535302',
-                      'os_distro': 'fedora-coreos'}
-        mock_os_res.return_value = mock_image
+    def test_validate_image_with_valid_image_by_id(self):
+        mock_image = mock.MagicMock()
+        mock_image.os_distro = 'ubuntu'
         mock_os_cli = mock.MagicMock()
+        mock_os_cli.glance.return_value.find_image.return_value = mock_image
         attr_validator.validate_image(mock_os_cli,
                                       'e33f0988-1730-405e-8401-30cbc8535302')
-        self.assertTrue(mock_os_res.called)
+        mock_os_cli.glance.return_value.find_image.assert_called_once_with(
+            'e33f0988-1730-405e-8401-30cbc8535302', ignore_missing=False)
 
-    @mock.patch('magnum.api.utils.get_openstack_resource')
-    def test_validate_image_with_nonexist_image_by_name(self, mock_os_res):
-        mock_os_res.side_effect = exception.ResourceNotFound
+    def test_validate_image_with_nonexist_image_by_name(self):
         mock_os_cli = mock.MagicMock()
+        mock_os_cli.glance.return_value.find_image.side_effect = (
+            sdk_exceptions.NotFoundException())
         self.assertRaises(exception.ImageNotFound,
                           attr_validator.validate_image,
-                          mock_os_cli, 'fedora-21-coreos-5')
+                          mock_os_cli, 'ubuntu-24.04')
 
-    @mock.patch('magnum.api.utils.get_openstack_resource')
-    def test_validate_image_with_nonexist_image_by_id(self, mock_os_res):
-        mock_os_res.side_effect = glance_exception.NotFound
+    def test_validate_image_with_nonexist_image_by_id(self):
         mock_os_cli = mock.MagicMock()
+        mock_os_cli.glance.return_value.find_image.side_effect = (
+            exception.ResourceNotFound(
+                name='image',
+                id='e33f0988-1730-405e-8401-30cbc8535302'))
         self.assertRaises(exception.ImageNotFound,
                           attr_validator.validate_image,
-                          mock_os_cli, 'fedora-21-coreos-5')
+                          mock_os_cli, 'ubuntu-24.04')
 
-    @mock.patch('magnum.api.utils.get_openstack_resource')
-    def test_validate_image_with_multi_images_same_name(self, mock_os_res):
-        mock_os_res.side_effect = exception.Conflict
+    def test_validate_image_with_multi_images_same_name(self):
         mock_os_cli = mock.MagicMock()
+        mock_os_cli.glance.return_value.find_image.side_effect = (
+            sdk_exceptions.DuplicateResource())
         self.assertRaises(exception.Conflict,
                           attr_validator.validate_image,
-                          mock_os_cli, 'fedora-21-coreos-5')
+                          mock_os_cli, 'ubuntu-24.04')
 
-    @mock.patch('magnum.api.utils.get_openstack_resource')
-    def test_validate_image_without_os_distro(self, mock_os_res):
-        mock_image = {'name': 'fedora-21-coreos-5',
-                      'id': 'e33f0988-1730-405e-8401-30cbc8535302'}
-        mock_os_res.return_value = mock_image
+    def test_validate_image_without_os_distro(self):
+        mock_image = mock.MagicMock()
+        mock_image.os_distro = None
         mock_os_cli = mock.MagicMock()
+        mock_os_cli.glance.return_value.find_image.return_value = mock_image
         self.assertRaises(exception.OSDistroFieldNotFound,
                           attr_validator.validate_image,
-                          mock_os_cli, 'fedora-21-coreos-5')
+                          mock_os_cli, 'ubuntu-24.04')
 
-    @mock.patch('magnum.api.utils.get_openstack_resource')
-    def test_validate_image_when_user_forbidden(self, mock_os_res):
-        mock_image = {'name': 'fedora-21-coreos-5',
-                      'id': 'e33f0988-1730-405e-8401-30cbc8535302',
-                      'os_distro': ''}
-        mock_os_res.return_value = mock_image
+    def test_validate_image_when_user_forbidden(self):
+        mock_image = mock.MagicMock()
+        mock_image.os_distro = ''
         mock_os_cli = mock.MagicMock()
+        mock_os_cli.glance.return_value.find_image.return_value = mock_image
         self.assertRaises(exception.OSDistroFieldNotFound,
                           attr_validator.validate_image,
-                          mock_os_cli, 'fedora-21-coreos-5')
+                          mock_os_cli, 'ubuntu-24.04')
 
     @mock.patch('magnum.common.clients.OpenStackClients')
     def test_validate_os_resources_with_invalid_flavor(self,
@@ -289,7 +289,7 @@ class TestAttrValidator(base.BaseTestCase):
         mock_flavor.id = 'test_flavor_id_not_equal'
         mock_flavors = [mock_flavor]
         mock_nova = mock.MagicMock()
-        mock_nova.flavors.list.return_value = mock_flavors
+        mock_nova.flavors.return_value = mock_flavors
         mock_os_cli.nova.return_value = mock_nova
         mock_context = mock.MagicMock()
         self.assertRaises(exception.FlavorNotFound,
@@ -314,13 +314,14 @@ class TestAttrValidator(base.BaseTestCase):
         mock_os_cli = mock.MagicMock()
         os_clients_klass.return_value = mock_os_cli
         mock_neutron = mock.MagicMock()
-        mock_networks = {'networks': [{'name': 'test_net',
-                                       'id': 'test_net_id'}]}
-        mock_neutron.list_networks.return_value = mock_networks
-        mock_subnets = {'subnets': [{'name': 'test_subnet',
-                                     'id': 'test_subnet_id',
-                                     'network_id': 'test_net_id'}]}
-        mock_neutron.list_subnets.return_value = mock_subnets
+        mock_net = mock.MagicMock()
+        mock_net.name = 'test_net'
+        mock_net.id = 'test_net_id'
+        mock_neutron.networks.return_value = [mock_net]
+        mock_subnet = mock.MagicMock()
+        mock_subnet.name = 'test_subnet'
+        mock_subnet.id = 'test_subnet_id'
+        mock_neutron.subnets.return_value = [mock_subnet]
         mock_os_cli.neutron.return_value = mock_neutron
         attr_validator.validate_os_resources(mock_context,
                                              mock_cluster_template)
@@ -334,13 +335,14 @@ class TestAttrValidator(base.BaseTestCase):
         mock_os_cli = mock.MagicMock()
         os_clients_klass.return_value = mock_os_cli
         mock_neutron = mock.MagicMock()
-        mock_networks = {'networks': [{'name': 'test_net',
-                                       'id': 'test_net_id'}]}
-        mock_neutron.list_networks.return_value = mock_networks
-        mock_subnets = {'subnets': [{'name': 'test_subnet',
-                                     'id': 'test_subnet_id',
-                                     'network_id': 'test_net_id'}]}
-        mock_neutron.list_subnets.return_value = mock_subnets
+        mock_net = mock.MagicMock()
+        mock_net.name = 'test_net'
+        mock_net.id = 'test_net_id'
+        mock_neutron.networks.return_value = [mock_net]
+        mock_subnet = mock.MagicMock()
+        mock_subnet.name = 'test_subnet'
+        mock_subnet.id = 'test_subnet_id'
+        mock_neutron.subnets.return_value = [mock_subnet]
         mock_os_cli.neutron.return_value = mock_neutron
         self.assertRaises(exception.FixedSubnetNotFound,
                           attr_validator.validate_os_resources, mock_context,
@@ -355,12 +357,8 @@ class TestAttrValidator(base.BaseTestCase):
         }
         mock_keypair = mock.MagicMock()
         mock_keypair.id = 'test-keypair'
-        mock_image = {'name': 'fedora-21-coreos-5',
-                      'id': 'e33f0988-1730-405e-8401-30cbc8535302',
-                      'os_distro': 'fedora-coreos'}
         mock_nova = mock.MagicMock()
-        mock_nova.keypairs.get.return_value = mock_keypair
-        mock_nova.images.get.return_value = mock_image
+        mock_nova.get_keypair.return_value = mock_keypair
         mock_os_cli = mock.MagicMock()
         mock_os_cli.nova.return_value = mock_nova
         mock_context = mock.MagicMock()
@@ -378,12 +376,12 @@ class TestAttrValidator(base.BaseTestCase):
         mock_flavor.disk = 0
         mock_flavors = [mock_flavor]
         mock_nova = mock.MagicMock()
-        mock_nova.flavors.list.return_value = mock_flavors
+        mock_nova.flavors.return_value = mock_flavors
         mock_os_cli = mock.MagicMock()
         mock_os_cli.nova.return_value = mock_nova
         attr_validator.validate_flavor_root_volume_size(
             mock_os_cli, 'test_flavor', boot_volume_size)
-        self.assertFalse(mock_nova.flavors.list.called)
+        self.assertFalse(mock_nova.flavors.called)
 
     def test_validate_flavor_root_volume_size_with_valid_flavor(self):
         boot_volume_size = 0
@@ -393,12 +391,12 @@ class TestAttrValidator(base.BaseTestCase):
         mock_flavor.disk = 100
         mock_flavors = [mock_flavor]
         mock_nova = mock.MagicMock()
-        mock_nova.flavors.list.return_value = mock_flavors
+        mock_nova.flavors.return_value = mock_flavors
         mock_os_cli = mock.MagicMock()
         mock_os_cli.nova.return_value = mock_nova
         attr_validator.validate_flavor_root_volume_size(
             mock_os_cli, 'test_flavor', boot_volume_size)
-        self.assertTrue(mock_nova.flavors.list.called)
+        self.assertTrue(mock_nova.flavors.called)
 
     def test_validate_flavor_root_volume_size_with_invalid_resources(self):
         boot_volume_size = 0
@@ -408,7 +406,7 @@ class TestAttrValidator(base.BaseTestCase):
         mock_flavor.disk = 0
         mock_flavors = [mock_flavor]
         mock_nova = mock.MagicMock()
-        mock_nova.flavors.list.return_value = mock_flavors
+        mock_nova.flavors.return_value = mock_flavors
         mock_os_cli = mock.MagicMock()
         mock_os_cli.nova.return_value = mock_nova
         self.assertRaises(exception.FlavorZeroRootVolumeNotSupported,
