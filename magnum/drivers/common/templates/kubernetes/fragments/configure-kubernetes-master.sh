@@ -271,7 +271,7 @@ CERT_DIR=/etc/kubernetes/certs
 
 # kube-proxy config
 PROXY_KUBECONFIG=/etc/kubernetes/proxy-kubeconfig.yaml
-KUBE_PROXY_ARGS="--kubeconfig=${PROXY_KUBECONFIG} --cluster-cidr=${PODS_NETWORK_CIDR} --hostname-override=${INSTANCE_NAME}"
+KUBE_PROXY_ARGS="--kubeconfig=${PROXY_KUBECONFIG} --cluster-cidr=${PODS_NETWORK_CIDR} --hostname-override=${INSTANCE_NAME} --metrics-bind-address=0.0.0.0"
 cat > /etc/kubernetes/proxy << EOF
 KUBE_PROXY_ARGS="${KUBE_PROXY_ARGS} ${KUBEPROXY_OPTIONS}"
 EOF
@@ -406,6 +406,8 @@ KUBE_CONTROLLER_MANAGER_ARGS="--leader-elect=true --kubeconfig=/etc/kubernetes/a
 KUBE_CONTROLLER_MANAGER_ARGS="$KUBE_CONTROLLER_MANAGER_ARGS --cluster-name=${CLUSTER_UUID}"
 KUBE_CONTROLLER_MANAGER_ARGS="${KUBE_CONTROLLER_MANAGER_ARGS} --allocate-node-cidrs=true"
 KUBE_CONTROLLER_MANAGER_ARGS="${KUBE_CONTROLLER_MANAGER_ARGS} --cluster-cidr=${PODS_NETWORK_CIDR}"
+KUBE_CONTROLLER_MANAGER_ARGS="${KUBE_CONTROLLER_MANAGER_ARGS} --secure-port=10257"
+KUBE_CONTROLLER_MANAGER_ARGS="${KUBE_CONTROLLER_MANAGER_ARGS} --authorization-always-allow-paths=/healthz,/readyz,/livez,/metrics"
 KUBE_CONTROLLER_MANAGER_ARGS="$KUBE_CONTROLLER_MANAGER_ARGS $KUBECONTROLLER_OPTIONS"
 if [ -n "${ADMISSION_CONTROL_LIST}" ] && [ "${TLS_DISABLED}" == "False" ]; then
     KUBE_CONTROLLER_MANAGER_ARGS="$KUBE_CONTROLLER_MANAGER_ARGS --service-account-private-key-file=$CERT_DIR/service_account_private.key --root-ca-file=$CERT_DIR/ca.crt"
@@ -428,7 +430,7 @@ sed -i '
     /^KUBE_CONTROLLER_MANAGER_ARGS=/ s#\(KUBE_CONTROLLER_MANAGER_ARGS\).*#\1="'"${KUBE_CONTROLLER_MANAGER_ARGS}"'"#
 ' /etc/kubernetes/controller-manager
 
-sed -i '/^KUBE_SCHEDULER_ARGS=/ s#=.*#="--leader-elect=true --kubeconfig=/etc/kubernetes/admin.conf"#' /etc/kubernetes/scheduler
+sed -i '/^KUBE_SCHEDULER_ARGS=/ s#=.*#="--leader-elect=true --kubeconfig=/etc/kubernetes/admin.conf --authorization-always-allow-paths=/healthz,/readyz,/livez,/metrics "#' /etc/kubernetes/scheduler
 
 $ssh_cmd mkdir -p /etc/kubernetes/manifests
 KUBELET_ARGS="--register-node=true --pod-manifest-path=/etc/kubernetes/manifests --hostname-override=${INSTANCE_NAME}"
@@ -497,7 +499,14 @@ KUBELET_ARGS="${KUBELET_ARGS} --client-ca-file=${CERT_DIR}/ca.crt --tls-cert-fil
 
 # specified cgroup driver
 KUBELET_ARGS="${KUBELET_ARGS} --cgroup-driver=${CGROUP_DRIVER}"
+
 if [ ${CONTAINER_RUNTIME} = "containerd"  ] ; then
+    # check kubelet version, 1.27.0 dropped docker shim and --container-runtime command line option
+    KUBELET_VERSION=$($ssh_cmd podman run --rm ${CONTAINER_INFRA_PREFIX:-${HYPERKUBE_PREFIX}}hyperkube:${KUBE_TAG} kubelet --version | awk '{print $2}')
+    CONTAINER_RUNTIME_REMOTE_DROPPED="v1.27.0"
+    if [[ "${CONTAINER_RUNTIME_REMOTE_DROPPED}" != $(echo -e "${CONTAINER_RUNTIME_REMOTE_DROPPED}\n${KUBELET_VERSION}" | sort -V | head -n1) && "${KUBELET_VERSION}" != "devel" ]]; then
+        KUBELET_ARGS="${KUBELET_ARGS} --container-runtime=remote"
+    fi
     KUBELET_ARGS="${KUBELET_ARGS} --runtime-cgroups=/system.slice/containerd.service"
     KUBELET_ARGS="${KUBELET_ARGS} --runtime-request-timeout=15m"
     KUBELET_ARGS="${KUBELET_ARGS} --container-runtime-endpoint=unix:///run/containerd/containerd.sock"
